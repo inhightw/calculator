@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCB CAF - AF & TTF 亨式計算器 </title>
+    <style>
+        /* 基礎樣式設計 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0056b3;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #d9534f;
+            margin-top: 25px;
+            border-bottom: 1px solid #f0ad4e;
+            padding-bottom: 5px;
+        }
+        h3 {
+            color: #5cb85c;
+            margin-top: 25px;
+            border-bottom: 1px solid #5cb85c;
+            padding-bottom: 5px;
+        }
+        .input-group, .constant-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .input-group label, .constant-group label {
+            flex: 2;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .input-group input {
+            flex: 3;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .constant, .ref-value {
+            color: #5a5a5a;
+            background-color: #e9ecef;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            flex: 3;
+        }
+        .ref-group {
+            background-color: #fceceb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #d9534f;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result-box {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid #28a745;
+            background-color: #e6ffed;
+            border-radius: 5px;
+            font-size: 1.2em;
+            text-align: center;
+        }
+        #result-value-af {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 1.3em;
+            display: block;
+        }
+        #result-value-ttf {
+            font-weight: bold;
+            color: #0056b3;
+            font-size: 1.8em;
+            margin-top: 10px;
+            display: block;
+        }
+        .unit {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔬 PCB CAF - AF & TTF 亨式計算器</h1>
+    
+    <h2>🔴 基準條件</h2>
+    <div class="ref-group">
+        <div class="constant-group">
+            <label>Layout 間距 ($L_{ref}$)</label>
+            <div class="ref-value">12 mil</div>
+        </div>
+        <div class="constant-group">
+            <label>工作電壓 ($V_{ref}$)</label>
+            <div class="ref-value">100 V</div>
+        </div>
+        <div class="constant-group">
+            <label>環境濕度 ($RH_{ref}$)</label>
+            <div class="ref-value">90 %RH</div>
+        </div>
+        <div class="constant-group">
+            <label>TTF: Time-To-Failure ($TTF_{ref}$)</label>
+            <div class="ref-value">45 小時</div>
+        </div>
+    </div>
+
+    <h2>🟢 輸入參數 (實際設計與環境條件)</h2>
+
+    <div class="input-group">
+        <label for="L_current">Layout 間距 ($L$)</label>
+        <input type="number" id="L_current" value="12" step="0.1" required>
+        <span class="unit">mil</span>
+    </div>
+
+    <div class="input-group">
+        <label for="V_current">工作電壓 ($V$)</label>
+        <input type="number" id="V_current" value="3.3" step="0.1" required>
+        <span class="unit">V</span>
+    </div>
+
+    <div class="input-group">
+        <label for="RH_current">環境濕度 ($RH$)</label>
+        <input type="number" id="RH_current" value="70" step="1" required>
+        <span class="unit">%RH (0-100)</span>
+    </div>
+
+    <h3>固定常數 (實驗與文獻結果)</h3>
+
+    <div class="constant-group">
+        <label>間距常數 (n)</label>
+        <div class="constant">4.5</div>
+    </div>
+    
+    <div class="constant-group">
+        <label for="m_const">電壓常數 (m)</label>
+        <input type="number" id="m_const" value="2.0" step="0.1" required>
+    </div>
+    
+    <div class="constant-group">
+        <label>濕度常數 (p)</label>
+        <div class="constant">3.51</div>
+    </div>
+    <div class="constant-group">
+        <label>儲存條件常數 (C)</label>
+        <div class="constant">1.6</div>
+    </div>
+
+    <button onclick="calculateTTF()">計算預期 AF & TTF</button>
+
+    <div id="result-box">
+        <div style="font-size: 0.9em; margin-bottom: 5px; color: #666;">
+        </div>
+        CAF 加速因子 (AF): <span id="result-value-af">待計算...</span>
+        <hr>
+        預期失效時間 (TTF): <span id="result-value-ttf">待計算...</span>
+    </div>
+
+</div>
+
+<script>
+    function calculateTTF() {
+        // --- 【除錯確認點】: 如果程式成功執行，這個彈窗會出現 ---
+        // 請確認您點擊按鈕後，是否有看到這個彈窗。
+        // alert("計算函數已開始執行。");
+
+        // --- 1. 基準條件 (Reference Conditions) ---
+        const L_ref = 12.0;
+        const V_ref = 100.0;
+        const RH_ref = 90.0 / 100.0; // 轉為小數 (0.9)
+        const TTF_ref = 45.0;
+
+        // --- 2. 獲取當前輸入值 (Current Conditions) ---
+        // 使用 .value 和 parseFloat 讀取輸入框數值
+        const L_curr = parseFloat(document.getElementById('L_current').value);
+        const V_curr = parseFloat(document.getElementById('V_current').value);
+        const RH_curr_percent = parseFloat(document.getElementById('RH_current').value);
+        const m = parseFloat(document.getElementById('m_const').value); 
+
+        // --- 3. 獲取常數 (Constants) ---
+        // 將所有常數直接寫入程式碼
+        const n = 4.5;
+        const p = 3.51;
+        const C = 1.6;
+        
+
+        // --- 4. 檢查輸入是否有效 ---
+        if (isNaN(L_curr) || isNaN(V_curr) || isNaN(RH_curr_percent) || isNaN(m)) {
+            document.getElementById('result-value-af').textContent = "請確保所有輸入欄位都填入了有效數字。";
+            document.getElementById('result-value-ttf').textContent = "請檢查輸入！";
+            return;
+        }
+
+        // 轉換 RH 為小數並檢查範圍
+        const RH_curr = RH_curr_percent / 100.0;
+        if (RH_curr <= 0 || RH_curr > 1) {
+             // 輸出錯誤訊息到結果欄
+            document.getElementById('result-value-af').textContent = "濕度 RH 必須在 0 到 100 之間。";
+            document.getElementById('result-value-ttf').textContent = "數值錯誤！";
+            return;
+        }
+
+        try {
+            // --- 5. 計算比值 (Ratios) ---
+            // S, V, RH 採用您的要求: Curr / Ref
+            const S_ratio = L_curr / L_ref; 
+            const V_ratio = V_curr / V_ref;
+            const RH_ratio = RH_curr / RH_ref;
+
+            // --- 6. 計算 AF (AF = S^n * V^-m * RH^-p / C) ---
+            const S_term = Math.pow(S_ratio, n);
+            const V_term = Math.pow(V_ratio, -m); 
+            const RH_term = Math.pow(RH_ratio, -p); 
+
+            // AF = (S^n * V^-m * RH^-p) / C
+            const AF = (S_term * V_term * RH_term);
+            
+            // --- 7. 計算預期 TTF (TTF = TTF_ref * AF) ---
+            const TTF_predict = TTF_ref * AF; 
+
+            // --- 8. 輸出結果 ---
+            document.getElementById('result-value-af').textContent = AF.toFixed(0);
+            document.getElementById('result-value-ttf').textContent = `${TTF_predict.toFixed(0)} 小時`;
+
+        } catch (error) {
+            // 如果發生數學錯誤（例如除以零）
+            document.getElementById('result-value-af').textContent = `計算錯誤`;
+            document.getElementById('result-value-ttf').textContent = `錯誤: ${error.message}`;
+        }
+    }
+</script>
+
+</body>
+</html>
