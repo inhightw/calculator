@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可靠度測試樣本數規劃工具 by Henry Luo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" xintegrity="sha384-GvrDXHqK4xkP6gOkqH7N3UajVHiUf/hkI/qO8SCWrDjdRfazRcBaTtrS+44u+A" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" xintegrity="sha384-f3wJ2PfKOqZ/eM4T4F9JtL4fBvL3Q4oG3F1rD6V5V8qWJ2P4w5T2tQ4w" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" xintegrity="sha384-W8b0w+s0/2M0+s44u+A" crossorigin="anonymous"></script>
+
+    <style>
+        /* 自定義樣式 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        .tab-button {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            border-radius: 0.5rem 0.5rem 0 0;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .tab-button.active {
+            background-color: #ffffff;
+            color: #3b82f6;
+            border-top: 3px solid #3b82f6;
+            margin-bottom: -1px; /* 覆蓋下方的邊界 */
+            z-index: 10;
+        }
+        .tab-button:not(.active) {
+            background-color: #e5e7eb;
+            color: #6b7280;
+        }
+        .content-container {
+            border: 1px solid #d1d5db;
+            border-radius: 0 0.5rem 0.5rem 0.5rem;
+            background-color: #ffffff;
+            padding: 2rem;
+            min-height: 70vh;
+        }
+        .calculator-card {
+            background-color: #f9fafb;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        /* 數學公式樣式 */
+        .formula-box {
+            display: block;
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: #f3f4f6;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+            text-align: center;
+        }
+        .katex-display {
+            margin: 0.5em 0;
+        }
+        .chi2-lookup-message {
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .chi2-lookup-success {
+            background-color: #d1fae5; /* green-100 */
+            color: #065f46; /* green-800 */
+            border: 1px solid #34d399; /* green-400 */
+        }
+        .chi2-lookup-warning {
+            background-color: #fef3c7; /* yellow-100 */
+            color: #92400e; /* yellow-800 */
+            border: 1px solid #fcd34d; /* yellow-400 */
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-2xl p-0">
+        <h1 class="text-3xl font-bold text-center p-6 bg-blue-600 text-white rounded-t-xl">
+            可靠度測試樣本數規劃工具 (RDT Sample Size)
+        </h1>
+
+        <div class="p-4">
+            <div class="flex flex-wrap border-b border-gray-300 -mb-px relative" id="tab-buttons">
+                <button class="tab-button" data-tab="intro">概述與情境 (Intro)</button>
+                <button class="tab-button" data-tab="r1">R1: 非參數二項式</button>
+                <button class="tab-button" data-tab="r2">R2: 參數二項式</button>
+                <button class="tab-button" data-tab="r3">R3: 指數卡方</button>
+                <button class="tab-button" data-tab="r4">R4: 威布爾卡方</button>
+            </div>
+
+            <div class="content-container shadow-lg" id="tab-contents">
+                
+                <div id="intro" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">四種可靠度測試樣本數規劃方法</h2>
+                    <p class="mb-6 text-gray-600">以下四種方法用於在不同的測試限制和對產品失效分佈的瞭解程度下，計算滿足可靠度目標所需的最小樣本數。</p>
+                    
+                    <div class="space-y-6">
+                        <div class="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+                            <h3 class="text-xl font-semibold text-blue-800 mb-2">R1: 非參數二項式 (Non-Parametric Binomial)</h3>
+                            <ul class="list-disc pl-5 text-gray-700 space-y-1">
+                                <li><strong>使用情境:</strong> 適用於單次性裝置 (One-shot Devices) 或測試時間與可靠度要求時間相同的情況。</li>
+                                <li><strong>特點:</strong> 不考慮時間因素，不需要知道產品的失效分佈 (無母數)。</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                            <h3 class="text-xl font-semibold text-green-800 mb-2">R2: 參數二項式 (Parametric Binomial)</h3>
+                            <ul class="list-disc pl-5 text-gray-700 space-y-1">
+                                <li><strong>使用情境:</strong> 測試時間 $(T_{\text{test}})$ 少於可靠度要求時間 $(t_{\text{req}})$ 時，並已知產品失效時間服從 Weibull 分佈且已知形狀參數 $\beta$ 的情況。</li>
+                                <li><strong>特點:</strong> 假設產品服從 Weibull 分佈，將要求可靠度 $R_{\text{req}}$ 轉換為測試時間下的等效可靠度 $R_{\text{test}}$ 後，再使用 R1 的二項式公式求解。</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg">
+                            <h3 class="text-xl font-semibold text-yellow-800 mb-2">R3: 指數分佈卡方 (Exponential Chi-Square)</h3>
+                            <ul class="list-disc pl-5 text-gray-700 space-y-1">
+                                <li><strong>使用情境:</strong> 適用於產品失效時間已知服從指數分佈 (Exponential Distribution) 的情況 (即恆定失效率)。</li>
+                                <li><strong>特點:</strong> 使用卡方分佈 (Chi-Square Distribution) 簡化計算，常用於連續壽命測試，計算中使用了總累積測試時間。</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+                            <h3 class="text-xl font-semibold text-red-800 mb-2">R4: 威布爾分佈卡方 (Weibull Chi-Square)</h3>
+                            <ul class="list-disc pl-5 text-gray-700 space-y-1">
+                                <li><strong>使用情境:</strong> 適用於產品失效時間已知服從 Weibull 分佈且已知形狀參數 $\beta$ 的情況。</li>
+                                <li><strong>特點:</strong> 是 R3 的擴展，將 $\beta$ 納入計算，更適合描述磨損期或初期失效。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="r1" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">R1: 非參數二項式 (Non-Parametric Binomial)</h2>
+                    
+                    <h3 class="text-xl font-semibold mb-3 text-gray-700">樣本數計算公式</h3>
+                    <div class="formula-box">
+                        $$1-C = \sum_{i=0}^{r}\binom{n}{i}(1-R)^{i}(R)^{n-i}$$
+                        <div class="mt-2 text-sm">
+                            $n$: 樣本數 (Sample Size) (待求解) <br>
+                            $r$: 允許的失效數 (Number of Failures Allowed) <br>
+                            $R$: 目標可靠度 (Demonstrated Reliability Target) <br>
+                            $C$: 信心水準 (Confidence Level)
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mt-6 mb-3 text-gray-700">計算器</h3>
+                    <div class="calculator-card space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div><label for="r1-R" class="block text-sm font-medium text-gray-700">目標可靠度 $R$ (%)</label><input type="number" id="r1-R" value="95" min="0.01" max="99.99" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR1()"></div>
+                            <div><label for="r1-C" class="block text-sm font-medium text-gray-700">信心水準 $C$ (%)</label><input type="number" id="r1-C" value="90" min="0.01" max="99.99" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR1()"></div>
+                            <div><label for="r1-r" class="block text-sm font-medium text-gray-700">允許的失效數 $r$</label><input type="number" id="r1-r" value="0" min="0" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR1()"></div>
+                        </div>
+                        
+                        <button onclick="calculateR1()" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-150 ease-in-out font-semibold shadow-md">
+                            計算樣本數 $n$
+                        </button>
+
+                        <div id="r1-result" class="p-3 bg-white border border-gray-200 rounded-md text-center">
+                            <p class="text-lg font-medium text-gray-800">所需最小樣本數 ($n$): <span id="r1-n" class="text-2xl font-bold text-red-600">--</span></p>
+                            <div id="r1-message" class="text-sm mt-2 text-red-500 font-medium hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="r2" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">R2: 參數二項式 (Parametric Binomial - Weibull)</h2>
+                    
+                    <h3 class="text-xl font-semibold mb-3 text-gray-700">樣本數計算公式 (Weibull 分佈)</h3>
+                    <div class="formula-box">
+                        $$\eta = \frac{t_{\text{req}}}{(-\ln(R_{\text{req}}))^{1/\beta}}$$
+                        $$R_{\text{test}} = e^{-(\frac{T_{\text{test}}}{\eta})^{\beta}}$$
+                        $$1-C = \sum_{i=0}^{r}\binom{n}{i}(1-R_{\text{test}})^{i}(R_{\text{test}})^{n-i}$$
+                        <div class="mt-2 text-sm">
+                            $\eta$: 威布爾尺度參數 (特徵壽命); $\beta$: 威布爾形狀參數 <br> 
+                            $R_{\text{req}}$: 要求可靠度; $t_{\text{req}}$: 要求可靠度時間 <br> 
+                            $T_{\text{test}}$: 可用測試時間 <br>
+                            $n$: 樣本數 (Sample Size) (待求解); $r$: 允許失效數 <br>
+                            $C$: 信心水準 (Confidence Level) <br>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mt-6 mb-3 text-gray-700">計算器</h3>
+                    <div class="calculator-card space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div><label for="r2-R-req" class="block text-sm font-medium text-gray-700">要求可靠度 $R_{\text{req}}$ (%)</label><input type="number" id="r2-R-req" value="80" min="0.01" max="99.99" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR2()"></div>
+                            <div><label for="r2-t-req" class="block text-sm font-medium text-gray-700">要求時間 $t_{\text{req}}$ (小時)</label><input type="number" id="r2-t-req" value="2000" min="1" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR2()"></div>
+                            <div><label for="r2-beta" class="block text-sm font-medium text-gray-700">威布爾 $\beta$</label><input type="number" id="r2-beta" value="2.0" min="0.1" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR2()"></div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div><label for="r2-C" class="block text-sm font-medium text-gray-700">信心水準 $C$ (%)</label><input type="number" id="r2-C" value="90" min="0.01" max="99.99" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR2()"></div>
+                            <div><label for="r2-T-test" class="block text-sm font-medium text-gray-700">測試時間 $T_{\text{test}}$ (小時)</label><input type="number" id="r2-T-test" value="1500" min="1" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR2()"></div>
+                            <div><label for="r2-r" class="block text-sm font-medium text-gray-700">允許的失效數 $r$</label><input type="number" id="r2-r" value="1" min="0" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR2()"></div>
+                        </div>
+                        
+                        <button onclick="calculateR2()" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition duration-150 ease-in-out font-semibold shadow-md">
+                            計算樣本數 $n$
+                        </button>
+
+                        <div id="r2-result" class="p-3 bg-white border border-gray-200 rounded-md text-center space-y-2">
+                            <p class="text-lg font-medium text-gray-800">等效可靠度 ($R_{\text{test}}$): <span id="r2-R-test" class="text-xl font-bold text-green-600">--</span></p>
+                            <p class="text-lg font-medium text-gray-800">所需最小樣本數 ($n$): <span id="r2-n" class="text-2xl font-bold text-red-600">--</span></p>
+                            <div id="r2-message" class="text-sm mt-2 text-red-500 font-medium hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="r3" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">R3: 指數分佈卡方 (Exponential Chi-Square)</h2>
+                    
+                    <h3 class="text-xl font-semibold mb-3 text-gray-700">樣本數計算公式</h3>
+                    <div class="formula-box">
+                        $$n = \frac{\text{MTTF}_{\text{req}} \cdot \chi_{C,2(r+1)}^{2}}{2T}$$
+                        <div class="mt-2 text-sm">
+                            $n$: 樣本數 (Sample Size) (待求解); $r$: 允許失效數 <br> 
+                            $\text{MTTF}_{\text{req}}$: 要求平均失效時間; $T$: 測試時間 <br>
+                            $\chi_{C,2(r+1)}^{2}$: 信心水準 $C$ 下、自由度 $2(r+1)$ 的卡方臨界值 <br>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mt-6 mb-3 text-gray-700">計算器 (已加入 $\chi^2$ 自動查表功能)</h3>
+                    <div class="calculator-card space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div><label for="r3-MTTF" class="block text-sm font-medium text-gray-700">要求 $\text{MTTF}_{\text{req}}$ (小時)</label><input type="number" id="r3-MTTF" value="400" min="1" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR3()"></div>
+                            <div><label for="r3-T" class="block text-sm font-medium text-gray-700">測試時間 $T$ (小時)</label><input type="number" id="r3-T" value="200" min="1" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR3()"></div>
+                            <div><label for="r3-r" class="block text-sm font-medium text-gray-700">允許的失效數 $r$</label><input type="number" id="r3-r" value="0" min="0" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR3()"></div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div><label for="r3-C" class="block text-sm font-medium text-gray-700">信心水準 $C$ (%)</label><input type="number" id="r3-C" value="95" min="0.01" max="99.99" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR3()"></div>
+                            <div><label for="r3-chi2" class="block text-sm font-medium text-gray-700">卡方臨界值 $\chi^2_{C,2(r+1)}$</label><input type="number" id="r3-chi2" value="5.991" min="0" step="0.001" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR3()"></div>
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-gray-700 opacity-0">Placeholder</label>
+                                <div id="r3-chi2-status" class="chi2-lookup-message hidden"></div>
+                            </div>
+                        </div>
+                        
+                        <blockquote class="p-3 my-4 border-l-4 border-red-500 bg-red-100 text-red-800">
+                            <p class="font-bold">注意:</p>
+                            <p class="text-sm">卡方臨界值計算器僅支援特定的信賴水準 $C$ (80%, 90%, 95%, 99%) 與允許失效數 $r$ (0, 1, 2, 3) 組合。對於超出此範圍的組合，將使用您輸入的值，或採用預設值。請自行查閱卡方分配表。</p>
+                        </blockquote>
+
+                        <button onclick="calculateR3()" class="w-full bg-yellow-600 text-white py-2 rounded-md hover:bg-yellow-700 transition duration-150 ease-in-out font-semibold shadow-md">
+                            計算樣本數 $n$
+                        </button>
+
+                        <div id="r3-result" class="p-3 bg-white border border-gray-200 rounded-md text-center space-y-2">
+                            <p class="text-lg font-medium text-gray-800">計算結果 $n$ (未取整): <span id="r3-n-float" class="text-xl font-bold text-gray-600">--</span></p>
+                            <p class="text-lg font-medium text-gray-800">所需最小樣本數 ($n$): <span id="r3-n" class="text-2xl font-bold text-red-600">--</span></p>
+                            <div id="r3-message" class="text-sm mt-2 text-red-500 font-medium hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="r4" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">R4: 威布爾分佈卡方 (Weibull Chi-Square)</h2>
+                    
+                    <h3 class="text-xl font-semibold mb-3 text-gray-700">樣本數計算公式 (假設 $t_i = T$)</h3>
+                    <div class="formula-box">
+                        $$n = \frac{\chi_{C,2(r+1)}^2}{-2 \ln(R_{\text{req}}) \cdot \left(\frac{T}{t_{\text{req}}}\right)^\beta}$$
+                        <div class="mt-2 text-sm">
+                            $n$: 樣本數 (Sample Size) (待求解); $r$: 允許失效數 <br> 
+                            $R_{\text{req}}$: 要求可靠度; <br>
+                            $t_{\text{req}}$: 要求可靠度時間; $T$: 測試時間 <br>
+                            $\beta$: 威布爾形狀參數 <br>
+                            $\chi_{C,2(r+1)}^{2}$: 信心水準 $C$ 下、自由度 $2(r+1)$ 的卡方臨界值 <br>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mt-6 mb-3 text-gray-700">計算器 (已加入 $\chi^2$ 自動查表功能)</h3>
+                    <div class="calculator-card space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div><label for="r4-R-req" class="block text-sm font-medium text-gray-700">要求可靠度 $R_{\text{req}}$ (%)</label><input type="number" id="r4-R-req" value="90" min="0.01" max="99.99" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR4()"></div>
+                            <div><label for="r4-t-req" class="block text-sm font-medium text-gray-700">要求時間 $t_{\text{req}}$ (小時)</label><input type="number" id="r4-t-req" value="2000" min="1" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR4()"></div>
+                            <div><label for="r4-beta" class="block text-sm font-medium text-gray-700">威布爾 $\beta$</label><input type="number" id="r4-beta" value="2.0" min="0.1" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR4()"></div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div><label for="r4-C" class="block text-sm font-medium text-gray-700">信心水準 $C$ (%)</label><input type="number" id="r4-C" value="80" min="0.01" max="99.99" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR4()"></div>
+                            <div><label for="r4-T" class="block text-sm font-medium text-gray-700">測試時間 $T$ (小時)</label><input type="number" id="r4-T" value="1500" min="1" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR4()"></div>
+                            <div><label for="r4-r" class="block text-sm font-medium text-gray-700">允許的失效數 $r$</label><input type="number" id="r4-r" value="0" min="0" step="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR4()"></div>
+                        </div>
+                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div><label for="r4-chi2" class="block text-sm font-medium text-gray-700">卡方臨界值 $\chi^2_{C,2(r+1)}$</label><input type="number" id="r4-chi2" value="3.219" min="0" step="0.001" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="calculateR4()"></div>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 opacity-0">Placeholder</label>
+                                <div id="r4-chi2-status" class="chi2-lookup-message hidden"></div>
+                            </div>
+                        </div>
+
+                        <blockquote class="p-3 my-4 border-l-4 border-red-500 bg-red-100 text-red-800">
+                            <p class="font-bold">注意:</p>
+                            <p class="text-sm">卡方臨界值計算器僅支援特定的信賴水準 $C$ (80%, 90%, 95%, 99%) 與允許失效數 $r$ (0, 1, 2, 3) 組合。對於超出此範圍的組合，將使用您輸入的值，或採用預設值。請自行查閱卡方分配表。</p>
+                        </blockquote>
+                        
+                        <button onclick="calculateR4()" class="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition duration-150 ease-in-out font-semibold shadow-md">
+                            計算樣本數 $n$
+                        </button>
+
+                        <div id="r4-result" class="p-3 bg-white border border-gray-200 rounded-md text-center space-y-2">
+                            <p class="text-lg font-medium text-gray-800">計算結果 $n$ (未取整): <span id="r4-n-float" class="text-xl font-bold text-gray-600">--</span></p>
+                            <p class="text-lg font-medium text-gray-800">所需最小樣本數 ($n$): <span id="r4-n" class="text-2xl font-bold text-red-600">--</span></p>
+                            <div id="r4-message" class="text-sm mt-2 text-red-500 font-medium hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===============================================
+        // 數學輔助函數 (適用於 R1, R2)
+        // ===============================================
+
+        // 二項式係數 C(n, i)
+        function combinations(n, i) {
+            if (i < 0 || i > n) return 0;
+            if (i === 0 || i === n) return 1;
+            if (i > n / 2) i = n - i;
+            
+            let res = 1;
+            for (let k = 1; k <= i; k++) {
+                res = res * (n - k + 1) / k;
+            }
+            return res;
+        }
+
+        /**
+         * 計算累計二項式機率 P(X <= r)
+         * P(X <= r | n, R) = Sum_{i=0}^{r} [ C(n, i) * (1-R)^i * R^(n-i) ]
+         */
+        function cumulativeBinomialProbability(n, r, R) {
+            if (r < 0 || n < 1) return 0;
+            if (r >= n) return 1;
+            
+            let sum = 0;
+            const P_fail = 1 - R;
+            const P_success = R;
+
+            for (let i = 0; i <= r; i++) {
+                const term = combinations(n, i) * Math.pow(P_fail, i) * Math.pow(P_success, n - i);
+                sum += term;
+            }
+            return sum;
+        }
+
+        /**
+         * 通過迭代搜尋找到滿足 $P(X \le r) \le 1-C$ 的最小 n
+         * @param {number} R 可靠度目標 (0 to 1)
+         * @param {number} C_percent 信心水準 (%)
+         * @param {number} r 允許失效數
+         * @returns {number | string} 最小樣本數 n 或錯誤訊息
+         */
+        function solveBinomialN(R, C_percent, r) {
+            const C = C_percent / 100.0;
+            const targetAlpha = 1 - C; // 目標風險值 (1-C)
+
+            if (R >= 1.0) return Infinity;
+            if (C >= 1.0) return Infinity;
+            if (r < 0) return NaN;
+
+            // 特殊情況 r=0 的解析解優化
+            if (r === 0 && R > 0 && targetAlpha > 0) {
+                const n_float = Math.log(targetAlpha) / Math.log(R);
+                if (isNaN(n_float) || n_float <= 0) return 1;
+                return Math.ceil(n_float);
+            }
+
+            const MAX_N = 100000; 
+            let n = 1;
+
+            while (n < MAX_N) {
+                const calculatedAlpha = cumulativeBinomialProbability(n, r, R);
+                
+                // 尋找最小的 n, 使得累積機率 (calculatedAlpha) 小於或等於目標風險值 (targetAlpha)
+                if (calculatedAlpha <= targetAlpha) {
+                    return n;
+                }
+                n++;
+            }
+            
+            return `> ${MAX_N - 1}`; 
+        }
+        
+        // ===============================================
+        // 卡方臨界值查表功能 (適用於 R3, R4)
+        // 查表值為 $\chi^2_{1-C, 2(r+1)}$
+        // ===============================================
+        
+        /**
+         * 預先定義的卡方臨界值表 (P=1-C)
+         * 鍵值為 'C_r'，其中 C 是信心水準百分比，r 是允許失效數
+         * r=0 (df=2), r=1 (df=4), r=2 (df=6), r=3 (df=8)
+         */
+        const CHI_SQUARE_TABLE = {
+            // C=80% (P=0.20)
+            '80_0': 3.219, '80_1': 5.989, '80_2': 8.558, '80_3': 11.030,
+            // C=90% (P=0.10)
+            '90_0': 4.605, '90_1': 7.779, '90_2': 10.645, '90_3': 13.362,
+            // C=95% (P=0.05)
+            '95_0': 5.991, '95_1': 9.488, '95_2': 12.592, '95_3': 15.507,
+            // C=99% (P=0.01)
+            '99_0': 9.210, '99_1': 13.277, '99_2': 16.812, '99_3': 20.090,
+        };
+
+        /**
+         * 根據信心水準和允許失效數查詢卡方臨界值
+         * @param {number} C_percent 信心水準 (%)
+         * @param {number} r 允許失效數
+         * @returns {number | null} 臨界值或 null (如果不在表內)
+         */
+        function getChiSquareCriticalValue(C_percent, r) {
+            // 只處理常用的 C 值
+            const C_str = [80, 90, 95, 99].find(c => Math.abs(c - C_percent) < 0.1); 
+            // 只處理 r=0, 1, 2, 3
+            if (r < 0 || r > 3 || !C_str) {
+                return null;
+            }
+            const key = `${C_str}_${r}`;
+            return CHI_SQUARE_TABLE[key] || null;
+        }
+
+        /**
+         * 處理卡方臨界值輸入和狀態顯示
+         * @param {string} chi2InputId 卡方輸入欄位 ID
+         * @param {string} CInputId 信心水準輸入欄位 ID
+         * @param {string} rInputId 允許失效數輸入欄位 ID
+         * @param {string} statusElementId 狀態顯示元素 ID
+         * @returns {number} 最終使用的卡方臨界值
+         */
+        function handleChiSquareInput(chi2InputId, CInputId, rInputId, statusElementId) {
+            const chi2Input = document.getElementById(chi2InputId);
+            const C_percent = parseFloat(document.getElementById(CInputId).value);
+            const r = parseInt(document.getElementById(rInputId).value, 10);
+            const statusElement = document.getElementById(statusElementId);
+            statusElement.classList.add('hidden');
+            statusElement.className = 'chi2-lookup-message'; // 重設類別
+            
+            // 嘗試自動查表
+            const autoChi2 = getChiSquareCriticalValue(C_percent, r);
+            let finalChi2 = parseFloat(chi2Input.value);
+
+            if (autoChi2 !== null) {
+                // 查表成功：顯示成功訊息並更新輸入框
+                finalChi2 = autoChi2;
+                
+                // 僅在查表值與當前輸入值不同時才更新輸入框
+                if (Math.abs(parseFloat(chi2Input.value) - autoChi2) > 0.001) {
+                    chi2Input.value = autoChi2.toFixed(3);
+                }
+                
+                // 計算自由度 df
+                const df = 2 * (r + 1);
+                
+                // 設置成功訊息
+                statusElement.textContent = `自動查表成功: $C=${C_percent}%, r=${r}$ (df=${df}) 的臨界值已更新為 ${finalChi2.toFixed(3)}。`;
+                statusElement.classList.remove('hidden');
+                statusElement.classList.add('chi2-lookup-success');
+            } else {
+                // 查表失敗：使用用戶手動輸入的值
+                if (isNaN(finalChi2) || finalChi2 <= 0) {
+                     // 如果手動輸入也無效，設置一個預設值並發出警告
+                     finalChi2 = 5.991; // 預設為 C=95%, r=0
+                     chi2Input.value = finalChi2.toFixed(3);
+                     statusElement.textContent = `輸入的 $\chi^2$ 無效。已採用預設值 ${finalChi2.toFixed(3)} (95%, r=0)。請手動查表輸入正確值。`;
+                } else {
+                     // 查表範圍外的警告
+                     statusElement.textContent = `未在常見參數表 (${r}=0-3, C=80/90/95/99%) 中找到。將使用您輸入的值 ${finalChi2.toFixed(3)} 進行計算。`;
+                }
+                statusElement.classList.remove('hidden');
+                statusElement.classList.add('chi2-lookup-warning');
+            }
+            
+            return finalChi2;
+        }
+
+        // ===============================================
+        // R1: 非參數二項式計算
+        // ===============================================
+        function calculateR1() {
+            const R_input = parseFloat(document.getElementById('r1-R').value); // 目標可靠度 R (%)
+            const C_input = parseFloat(document.getElementById('r1-C').value); // 信心水準 C (%)
+            const r_allowed = parseInt(document.getElementById('r1-r').value, 10); // 允許失效數 r
+            const R = R_input / 100;
+            
+            const resultElement = document.getElementById('r1-n');
+            const messageElement = document.getElementById('r1-message');
+            messageElement.classList.add('hidden');
+
+            if (isNaN(R) || R <= 0 || R >= 1 || isNaN(C_input) || C_input <= 0 || C_input >= 100 || isNaN(r_allowed) || r_allowed < 0) {
+                resultElement.textContent = "輸入無效";
+                messageElement.textContent = "請檢查所有輸入值必須有效。";
+                messageElement.classList.remove('hidden');
+                return;
+            }
+
+            const n_result = solveBinomialN(R, C_input, r_allowed);
+            
+            if (n_result === Infinity) {
+                resultElement.textContent = '無限大';
+                messageElement.textContent = '在給定參數下，所需的樣本數是無限大。';
+                messageElement.classList.remove('hidden');
+            } else if (typeof n_result === 'string' && n_result.startsWith('>')) {
+                resultElement.textContent = n_result;
+                messageElement.textContent = '樣本數可能超過了計算器設定的最大搜索上限。';
+                messageElement.classList.remove('hidden');
+            } else if (isNaN(n_result)) {
+                 resultElement.textContent = '錯誤';
+                 messageElement.textContent = '計算失敗。請檢查輸入參數。';
+                 messageElement.classList.remove('hidden');
+            } else {
+                resultElement.textContent = n_result;
+            }
+        }
+
+        // ===============================================
+        // R2: 參數二項式計算
+        // ===============================================
+        function calculateR2() {
+            const R_req_input = parseFloat(document.getElementById('r2-R-req').value); // R_req (%)
+            const t_req = parseFloat(document.getElementById('r2-t-req').value); // t_req
+            const beta = parseFloat(document.getElementById('r2-beta').value); // beta
+            const C_input = parseFloat(document.getElementById('r2-C').value); // C (%)
+            const T_test = parseFloat(document.getElementById('r2-T-test').value); // T_test
+            const r_allowed = parseInt(document.getElementById('r2-r').value, 10); // r
+            const R_req = R_req_input / 100;
+
+            const R_test_element = document.getElementById('r2-R-test');
+            const n_element = document.getElementById('r2-n');
+            const messageElement = document.getElementById('r2-message');
+            messageElement.classList.add('hidden');
+
+
+            if (isNaN(R_req) || R_req <= 0 || R_req >= 1 || isNaN(t_req) || t_req <= 0 || isNaN(beta) || beta <= 0 || isNaN(C_input) || C_input <= 0 || C_input >= 100 || isNaN(T_test) || T_test <= 0 || isNaN(r_allowed) || r_allowed < 0) {
+                R_test_element.textContent = "輸入無效";
+                n_element.textContent = "輸入無效";
+                messageElement.textContent = "請檢查所有輸入值必須有效且 $R_{\text{req}}$ 介於 0-100% 之間。";
+                messageElement.classList.remove('hidden');
+                return;
+            }
+
+            // 步驟 1: 計算 Weibull 尺度參數 (eta)
+            const ln_R_req = Math.log(R_req);
+            const eta = t_req / Math.pow(-ln_R_req, 1 / beta);
+
+            // 步驟 2: 計算測試時間下的等效可靠度 (R_test)
+            const R_test = Math.exp(-Math.pow(T_test / eta, beta));
+            const R_test_percent = (R_test * 100).toFixed(3);
+            R_test_element.textContent = R_test_percent + " %";
+
+            // 步驟 3: 求解樣本數 (n)
+            const n_result = solveBinomialN(R_test, C_input, r_allowed);
+
+            if (n_result === Infinity) {
+                n_element.textContent = '無限大';
+                messageElement.textContent = '所需的樣本數是無限大。';
+                messageElement.classList.remove('hidden');
+            } else if (typeof n_result === 'string' && n_result.startsWith('>')) {
+                n_element.textContent = n_result;
+                messageElement.textContent = '樣本數可能超過了計算器設定的最大搜索上限。';
+                messageElement.classList.remove('hidden');
+            } else if (isNaN(n_result)) {
+                 n_element.textContent = '錯誤';
+                 messageElement.textContent = '計算失敗。請檢查輸入參數。';
+                 n_element.classList.remove('hidden');
+            } else {
+                n_element.textContent = n_result;
+            }
+        }
+
+        // ===============================================
+        // R3: 指數卡方計算
+        // ===============================================
+        function calculateR3() {
+            // **處理卡方臨界值**
+            const chi2 = handleChiSquareInput('r3-chi2', 'r3-C', 'r3-r', 'r3-chi2-status');
+
+            const MTTF_req = parseFloat(document.getElementById('r3-MTTF').value); // MTTF_req (小時)
+            const T = parseFloat(document.getElementById('r3-T').value); // T (小時)
+            const r_allowed = parseInt(document.getElementById('r3-r').value, 10); // r
+
+            const n_float_element = document.getElementById('r3-n-float');
+            const n_element = document.getElementById('r3-n');
+            const messageElement = document.getElementById('r3-message');
+            messageElement.classList.add('hidden');
+
+            if (isNaN(MTTF_req) || MTTF_req <= 0 || isNaN(T) || T <= 0 || isNaN(r_allowed) || r_allowed < 0 || isNaN(chi2) || chi2 <= 0) {
+                n_float_element.textContent = "輸入無效";
+                n_element.textContent = "輸入無效";
+                messageElement.textContent = "請檢查 $\text{MTTF}_{\text{req}}$, $T$ 必須大於 0, $r \ge 0$, $\chi^2 > 0$。";
+                messageElement.classList.remove('hidden');
+                return;
+            }
+
+            // 求解樣本數 (n)
+            // n = (MTTF_req * Chi^2) / (2 * T)
+            const n_float = (MTTF_req * chi2) / (2 * T);
+            const n_result = Math.ceil(n_float);
+
+            n_float_element.textContent = n_float.toFixed(4);
+
+            if (isNaN(n_result) || n_result === Infinity) {
+                n_element.textContent = '錯誤';
+                messageElement.textContent = "計算失敗。";
+                messageElement.classList.remove('hidden');
+            } else {
+                n_element.textContent = n_result;
+            }
+        }
+
+        // ===============================================
+        // R4: 威布爾卡方計算
+        // ===============================================
+        function calculateR4() {
+            // **處理卡方臨界值**
+            const chi2 = handleChiSquareInput('r4-chi2', 'r4-C', 'r4-r', 'r4-chi2-status');
+            
+            const R_req_input = parseFloat(document.getElementById('r4-R-req').value); // R_req (%)
+            const t_req = parseFloat(document.getElementById('r4-t-req').value); // t_req (小時)
+            const beta = parseFloat(document.getElementById('r4-beta').value); // beta
+            const T = parseFloat(document.getElementById('r4-T').value); // T (小時)
+            const r_allowed = parseInt(document.getElementById('r4-r').value, 10); // r
+            const R_req = R_req_input / 100;
+
+
+            const n_float_element = document.getElementById('r4-n-float');
+            const n_element = document.getElementById('r4-n');
+            const messageElement = document.getElementById('r4-message');
+            messageElement.classList.add('hidden');
+
+            if (isNaN(R_req) || R_req <= 0 || R_req >= 1 || isNaN(t_req) || t_req <= 0 || isNaN(beta) || beta <= 0 || isNaN(T) || T <= 0 || isNaN(r_allowed) || r_allowed < 0 || isNaN(chi2) || chi2 <= 0) {
+                n_float_element.textContent = "輸入無效";
+                n_element.textContent = "輸入無效";
+                messageElement.textContent = "請檢查所有輸入值必須有效且 $\chi^2 > 0$。";
+                messageElement.classList.remove('hidden');
+                return;
+            }
+
+            // 求解樣本數 (n)
+            // n = Chi^2 / (-2 * ln(R_req) * (T/t_req)^beta)
+            const ln_R_req = Math.log(R_req);
+            
+            const T_ratio_beta = Math.pow(T / t_req, beta);
+            const denominator = -2 * ln_R_req * T_ratio_beta;
+
+            if (denominator <= 0) {
+                n_float_element.textContent = "錯誤";
+                n_element.textContent = "錯誤";
+                messageElement.textContent = "分母小於或等於零，計算失敗。";
+                messageElement.classList.remove('hidden');
+                return;
+            }
+
+            const n_float = chi2 / denominator;
+            const n_result = Math.ceil(n_float);
+
+            n_float_element.textContent = n_float.toFixed(4);
+
+
+            if (isNaN(n_result) || n_result === Infinity) {
+                n_element.textContent = '錯誤';
+                messageElement.textContent = "計算失敗。";
+                messageElement.classList.remove('hidden');
+            } else {
+                n_element.textContent = n_result;
+            }
+        }
+        
+        // ===============================================
+        // Tab 切換與初始化
+        // ===============================================
+
+        function showTab(tabId) {
+            // 移除所有按鈕的 active 狀態
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            // 隱藏所有內容
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            // 設置點擊按鈕為 active
+            const activeBtn = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            // 顯示對應內容
+            const activeContent = document.getElementById(tabId);
+            if (activeContent) activeContent.classList.remove('hidden');
+        }
+
+        function initializeTabs() {
+            // Add event listeners to all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    showTab(tabId);
+                });
+            });
+
+            // 執行所有計算以初始化結果顯示
+            // 注意：R3/R4 的計算會觸發 $\chi^2$ 檢查和更新
+            calculateR1();
+            calculateR2();
+            calculateR3(); 
+            calculateR4();
+            
+            // 預設顯示第一個分頁 'intro' (已修改)
+            showTab('intro');
+        }
+
+        /**
+         * 統一的應用程式初始化入口
+         * 確保在 DOM 完全載入後執行 KaTeX 渲染，然後才進行其他初始化邏輯。
+         */
+        function initializeApp() {
+            // 1. **KaTeX 渲染 (必須在 DOM 載入後執行)**
+            // 檢查 renderMathInElement 是否存在，避免 KaTeX 腳本未載入的錯誤
+            if (typeof renderMathInElement !== 'undefined') {
+                 renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ],
+                    // 確保支援 \text{}
+                    throwOnError : false
+                });
+            } else {
+                 console.error("KaTeX auto-render 腳本載入失敗。");
+            }
+            
+            // 2. 執行應用程式邏輯初始化
+            initializeTabs();
+        }
+
+        // 頁面載入後執行初始化 (使用新的統一入口)
+        window.onload = initializeApp;
+
+    </script>
+
+</body>
+</html>
