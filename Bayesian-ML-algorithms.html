@@ -6,48 +6,35 @@
     <style>
         body { font-family: -apple-system, "微軟正黑體", sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 950px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        
         .header-section { margin-bottom: 25px; }
         .source-info { font-size: 13px; color: #666; padding-left: 12px; border-left: 3px solid #2196f3; line-height: 1.6; margin-top: 10px; }
-
         .config-row { margin-bottom: 15px; padding: 15px; border-radius: 8px; border: 1px solid #e1e4e8; background: #fafafa; }
-        .config-label { font-size: 14px; font-weight: bold; margin-bottom: 10px; display: block; color: #444; }
-        
-        /* 使用響應式網格，確保在 4 個方案時也能整齊換行不跑版 */
         .rates-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
         .rate-box { background: white; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        
         .flex-group { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
         .field { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
         label { font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #666; }
         input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-
         .btn-group { display: flex; gap: 10px; margin: 25px 0; flex-wrap: wrap; }
         .btn { padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-run { background: #28a745; color: white; }
-        .btn-run:hover { background: #218838; }
         .btn-reset { background: #6c757d; color: white; }
-
         .result-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; }
-        @media (max-width: 768px) { .result-grid { grid-template-columns: 1fr; } }
-        
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px; }
         th { background: #f1f3f5; }
-
         .chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; border-bottom: 2px solid #444; padding-bottom: 10px; }
         .bar-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; }
         .bar { width: 35px; transition: height 0.3s ease; min-height: 2px; }
-
         .logic-box { margin-top: 30px; padding: 25px; background: #fffdf0; border-left: 5px solid #ffc107; border-radius: 4px; }
         .logic-title { font-weight: bold; color: #856404; font-size: 18px; margin-bottom: 12px; }
         .logic-content { font-size: 15px; color: #533f03; line-height: 1.8; }
         .step-item { margin-bottom: 8px; }
+        .status-tag { padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-left: 10px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <div class="header-section">
         <h2 style="margin:0;">A/B 測試 - 貝氏機器學習演算法</h2>
@@ -56,23 +43,20 @@
             <strong>Developer:</strong> QRM / Henry Luo
         </div>
     </div>
-
     <div class="config-row">
         <div class="field" style="max-width: 250px;">
             <label>1. 選擇比較個數 (2~4)</label>
             <select id="item-count" onchange="initApp()">
                 <option value="2">2 個</option>
-                <option value="3" selected>3 個 (預設)</option>
+                <option value="3" selected>3 個 (default)</option>
                 <option value="4">4 個</option>
             </select>
         </div>
     </div>
-
     <div class="config-row">
         <span class="config-label">2. 設定各方案真實通過率 (Ground Truth)</span>
         <div id="rates-container" class="rates-grid"></div>
     </div>
-
     <div class="config-row">
         <div class="flex-group">
             <div class="field">
@@ -89,14 +73,12 @@
             </div>
         </div>
     </div>
-
     <div class="btn-group">
         <button class="btn btn-run" onclick="runSim(1)">執行 +1 次</button>
         <button class="btn btn-run" onclick="runSim(10)">執行 +10 次</button>
         <button class="btn btn-run" onclick="runSim(100)">執行 +100 次</button>
         <button class="btn btn-reset" onclick="resetData()">數據重設</button>
     </div>
-
     <div class="result-grid">
         <div>
             <table>
@@ -105,11 +87,13 @@
                 </thead>
                 <tbody id="table-body"></tbody>
             </table>
-            <p style="font-size:13px; color:#666; margin-top:15px;">總測試次數：<span id="total-display" style="font-weight:bold; color:#2196f3;">0</span></p>
+            <p style="font-size:13px; color:#666; margin-top:15px;">
+                總測試次數：<span id="total-display" style="font-weight:bold; color:#2196f3;">0</span>
+                <span id="state-msg"></span>
+            </p>
         </div>
         <div class="chart-container" id="chart-container"></div>
     </div>
-
     <div class="logic-box">
         <div class="logic-title" id="logic-title"></div>
         <div id="logic-content" class="logic-content"></div>
@@ -120,68 +104,42 @@
     const COLORS = ['#ff6384', '#36a2eb', '#4bc0c0', '#ff9f40'];
     const NAMES = ['A', 'B', 'C', 'D'];
     const DEF_RATES = [0.5, 0.8, 0.9, 0.7];
+    let N, counts, wins, alphas, betas, total, lastScores, lastEpsStatus;
 
-    let N, counts, wins, alphas, betas, total, lastScores;
-
-    // 您偏好的詳細說明內容
     const descriptions = {
-        ts: {
-            title: "Thompson Sampling (湯普森採樣) 執行步驟：",
-            header: "Beta 抽樣值",
-            steps: [
-                "1. 為每個方案建立 <b>Beta 分佈</b>（初始為 α=1, β=1，代表完全未知）。",
-                "2. 從每個分佈中<b>隨機抽取一個數值</b>作為本輪的評估指標。",
-                "3. 選擇<b>指標最高</b>的方案進行測試（若指標相同則隨機選擇）。",
-                "4. <b>更新數據</b>：若測試成功，該方案的 α+1；若失敗，則 β+1。",
-                "5. 此方法在論文中被證明能以最快速度收斂至最佳方案。"
-            ]
-        },
-        ucb1: {
-            title: "UCB1 (Upper Confidence Bound) 執行步驟：",
-            header: "UCB 指標值",
-            steps: [
-                "1. <b>初始階段</b>：前 N 輪確保每個方案都至少測過一次。",
-                "2. <b>計算指標</b>：指標 = 目前平均勝率 + <b>√[(2 * ln 總次數) / 該方案次數]</b>。",
-                "3. <b>決策邏輯</b>：加成項代表「不確定性」。選指標最高的，等於是給測得少的方案一個機會。",
-                "4. <b>動態平衡</b>：隨測試次數增加，加成項會縮小，演算法會逐漸集中在表現最好的方案。",
-                "5. 若最高指標有多個，採隨機挑選 (Random Tie-break)。"
-            ]
-        },
-        egreedy: {
-            title: "Epsilon-Greedy (ε-貪婪) 執行步驟：",
-            header: "平均成功率",
-            steps: [
-                "1. 設定一個探索率 <b>ε</b> (例如 0.1)。",
-                "2. 產生一個 0 到 1 之間的隨機數。",
-                "3. 如果隨機數 < ε，進行<b>「探索」</b>：隨機從所有方案中選一個。",
-                "4. 如果隨機數 > ε，進行<b>「開發」</b>：選擇目前平均通過率最高的方案。",
-                "5. 更新結果並重新計算該方案的平均勝率。"
-            ]
-        }
+        ts: { title: "Thompson Sampling (湯普森採樣) 執行步驟：", header: "Beta 抽樣值", steps: [
+            "1. 為每個方案建立 <b>Beta 分佈</b>（初始為 α=1, β=1）。",
+            "2. 從每個分佈中<b>隨機抽取一個數值</b>作為本輪評估指標。",
+            "3. 選擇<b>指標最高</b>的方案進行測試。",
+            "4. <b>更新數據</b>：若成功 α+1；若失敗 β+1。",
+            "5. 此方法被證明能以最快速度收斂至最佳方案。"
+        ]},
+        ucb1: { title: "UCB1 (Upper Confidence Bound) 執行步驟：", header: "UCB 指標值", steps: [
+            "1. <b>初始階段</b>：前 N 輪確保每個方案都至少測過一次。",
+            "2. <b>計算指標</b>：指標 = 目前平均勝率 + <b>√[(2 * ln 總次數) / 該方案次數]</b>。",
+            "3. <b>決策邏輯</b>：若最高指標有多個，從中隨機挑選 (Random Tie-break)。",
+            "4. <b>動態平衡</b>：隨次數增加，加成項會縮小，逐漸集中在最佳方案。",
+            "5. 選指標最高的方案，給予測試較少的方案機會。"
+        ]},
+        egreedy: { title: "Epsilon-Greedy (ε-貪婪) 執行步驟：", header: "當次隨機數", steps: [
+            "1. 設定一個探索率 <b>ε</b>。",
+            "2. 產生一個 0 到 1 之間的<b>隨機數</b>。",
+            "3. 若隨機數 < ε，進行<b>「探索」</b>：隨機從所有方案中選一個。",
+            "4. 若隨機數 > ε，進行<b>「開發」</b>：選擇目前勝率最高的方案。",
+            "5. 更新結果並重新計算該方案的平均勝率。"
+        ]}
     };
 
     function initApp() {
         N = parseInt(document.getElementById('item-count').value);
         const ratesDiv = document.getElementById('rates-container');
         ratesDiv.innerHTML = '';
-        
         for(let i=0; i<N; i++) {
             let val = (N == 2) ? (i == 0 ? 0.95 : 0.97) : DEF_RATES[i];
-            ratesDiv.innerHTML += `
-                <div class="rate-box">
-                    <label style="color:${COLORS[i]}">Design ${NAMES[i]}</label>
-                    <input type="number" id="r${i}" value="${val}" step="0.01" min="0" max="1">
-                </div>`;
+            ratesDiv.innerHTML += `<div class="rate-box"><label style="color:${COLORS[i]}">Design ${NAMES[i]}</label><input type="number" id="r${i}" value="${val}" step="0.01"></div>`;
         }
-        
-        document.getElementById('table-body').innerHTML = Array.from({length:N}, (_,i) => 
-            `<tr><td style="color:${COLORS[i]}; font-weight:bold;">${NAMES[i]}</td><td id="c${i}">0</td><td id="p${i}">0%</td><td id="m${i}">-</td></tr>`
-        ).join('');
-        
-        document.getElementById('chart-container').innerHTML = Array.from({length:N}, (_,i) => 
-            `<div class="bar-wrapper"><div id="bar${i}" class="bar" style="background:${COLORS[i]}; height:0px;"></div><div style="font-size:12px;margin-top:5px;font-weight:bold;">${NAMES[i]}</div></div>`
-        ).join('');
-        
+        document.getElementById('table-body').innerHTML = Array.from({length:N}, (_,i) => `<tr><td style="color:${COLORS[i]}; font-weight:bold;">${NAMES[i]}</td><td id="c${i}">0</td><td id="p${i}">0%</td><td id="m${i}">-</td></tr>`).join('');
+        document.getElementById('chart-container').innerHTML = Array.from({length:N}, (_,i) => `<div class="bar-wrapper"><div id="bar${i}" class="bar" style="background:${COLORS[i]}; height:0px;"></div><div style="font-size:12px;margin-top:5px;font-weight:bold;">${NAMES[i]}</div></div>`).join('');
         syncAlgoUI();
     }
 
@@ -191,15 +149,14 @@
         document.getElementById('eps-div').className = (algo === 'egreedy' ? 'field' : 'field hidden');
         document.getElementById('metric-name').innerText = data.header;
         document.getElementById('logic-title').innerText = data.title;
-        
-        // 動態替換「前 N 輪」文字並生成列表
-        let stepsHtml = data.steps.map(s => `<div class="step-item">${s.replace('前 N 輪', '前 ' + N + ' 輪')}</div>`).join('');
-        document.getElementById('logic-content').innerHTML = stepsHtml;
+        document.getElementById('logic-content').innerHTML = data.steps.map(s => `<div class="step-item">${s.replace('前 N 輪', '前 ' + N + ' 輪')}</div>`).join('');
         resetData();
     }
 
     function resetData() {
-        counts = Array(N).fill(0); wins = Array(N).fill(0); alphas = Array(N).fill(1); betas = Array(N).fill(1); total = 0; lastScores = Array(N).fill(0);
+        counts = Array(N).fill(0); wins = Array(N).fill(0); alphas = Array(N).fill(1); betas = Array(N).fill(1); 
+        total = 0; lastScores = Array(N).fill(0); lastEpsStatus = "";
+        document.getElementById('state-msg').innerHTML = "";
         updateUI();
     }
 
@@ -212,39 +169,55 @@
     function runSim(steps) {
         const algo = document.getElementById('algo').value;
         const rates = Array.from({length:N}, (_,i) => parseFloat(document.getElementById(`r${i}`).value) || 0);
-        
         for(let s=0; s<steps; s++) {
-            let idx;
+            let idx = undefined;
             if(algo === 'ts') {
                 lastScores = alphas.map((a, i) => rbeta(a, betas[i]));
             } else if(algo === 'ucb1') {
                 if(counts.includes(0)) {
-                    idx = counts.indexOf(0); 
-                    lastScores = Array(N).fill(0); // 初始化階段顯示 0
+                    idx = counts.indexOf(0);
                 } else {
                     lastScores = counts.map((n, i) => (wins[i]/n) + Math.sqrt(2 * Math.log(total)/n));
                 }
             } else {
                 const eps = parseFloat(document.getElementById('epsilon').value);
-                lastScores = counts.map((n, i) => n === 0 ? 0 : wins[i]/n);
-                if(Math.random() < eps) idx = Math.floor(Math.random() * N);
+                const rand = Math.random();
+                lastScores = Array(N).fill(rand);
+                if(rand < eps) {
+                    idx = Math.floor(Math.random() * N); // 探索：純隨機挑選
+                    lastEpsStatus = `<span class="status-tag" style="background:#ffc107;color:white;">探索中</span>`;
+                } else {
+                    const winRates = counts.map((n, i) => n === 0 ? 0 : wins[i]/n);
+                    let maxWR = Math.max(...winRates);
+                    let candidates = []; 
+                    winRates.forEach((v, i) => { if(Math.abs(v - maxWR) < 1e-7) candidates.push(i); });
+                    idx = candidates[Math.floor(Math.random() * candidates.length)];
+                    lastEpsStatus = `<span class="status-tag" style="background:#28a745;color:white;">開發中</span>`;
+                }
             }
 
+            // 如果索引尚未決定 (TS 或 UCB1 正常執行路徑)，從並列最高的指標中挑選
             if(idx === undefined) {
-                let max = Math.max(...lastScores);
-                let cand = []; lastScores.forEach((v, i) => { if(Math.abs(v-max) < 1e-7) cand.push(i); });
-                idx = cand[Math.floor(Math.random() * cand.length)];
+                let maxVal = Math.max(...lastScores);
+                let candidates = [];
+                lastScores.forEach((v, i) => { if(Math.abs(v - maxVal) < 1e-7) candidates.push(i); });
+                idx = candidates[Math.floor(Math.random() * candidates.length)];
             }
 
             const win = Math.random() < rates[idx] ? 1 : 0;
             counts[idx]++; wins[idx] += win; total++;
             if(win) alphas[idx]++; else betas[idx]++;
-            idx = undefined;
+
+            // UCB1 即時更新指標顯示
+            if(algo === 'ucb1') {
+                lastScores = counts.map((n, i) => n === 0 ? 0 : (wins[i]/n) + Math.sqrt(2 * Math.log(total)/n));
+            }
         }
         updateUI();
     }
 
     function updateUI() {
+        const algo = document.getElementById('algo').value;
         const maxC = Math.max(...counts, 1);
         for(let i=0; i<N; i++) {
             document.getElementById(`c${i}`).innerText = counts[i];
@@ -253,10 +226,9 @@
             document.getElementById(`bar${i}`).style.height = (counts[i]/maxC * 160) + "px";
         }
         document.getElementById('total-display').innerText = total;
+        if(algo === 'egreedy') document.getElementById('state-msg').innerHTML = lastEpsStatus;
     }
-
     initApp();
 </script>
 </body>
 </html>
-
