@@ -4,101 +4,126 @@
     <meta charset="UTF-8">
     <title>A/B 測試 - 貝氏機器學習演算法</title>
     <style>
-        body { font-family: -apple-system, "微軟正黑體", sans-serif; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        body { font-family: -apple-system, "微軟正黑體", sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
-        .row-rates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; padding: 15px; border: 1px solid #e1e4e8; border-radius: 8px; }
-        .row-algo { display: flex; align-items: flex-end; gap: 20px; margin-bottom: 25px; padding: 15px; background: #f1f8ff; border-radius: 8px; }
+        .header-section { margin-bottom: 25px; }
+        .source-info { font-size: 13px; color: #666; padding-left: 12px; border-left: 3px solid #2196f3; line-height: 1.6; margin-top: 10px; }
+
+        .config-row { margin-bottom: 15px; padding: 15px; border-radius: 8px; border: 1px solid #e1e4e8; background: #fafafa; }
+        .config-label { font-size: 14px; font-weight: bold; margin-bottom: 10px; display: block; color: #444; }
         
-        .field { display: flex; flex-direction: column; flex: 1; }
-        label { font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #555; }
+        /* 使用響應式網格，確保在 4 個方案時也能整齊換行不跑版 */
+        .rates-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .rate-box { background: white; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        
+        .flex-group { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
+        .field { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
+        label { font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #666; }
         input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        
-        .btn-group { display: flex; gap: 10px; margin-bottom: 30px; }
-        .btn { padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .btn-group { display: flex; gap: 10px; margin: 25px 0; flex-wrap: wrap; }
+        .btn { padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-run { background: #28a745; color: white; }
+        .btn-run:hover { background: #218838; }
         .btn-reset { background: #6c757d; color: white; }
 
-        .main-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; }
+        .result-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; }
+        @media (max-width: 768px) { .result-grid { grid-template-columns: 1fr; } }
+        
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px; }
-        th { background: #f8f9fa; }
+        th { background: #f1f3f5; }
 
-        .chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .bar-wrapper { display: flex; flex-direction: column; align-items: center; width: 60px; }
-        .bar { width: 40px; transition: height 0.3s ease; min-height: 2px; }
+        .chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; border-bottom: 2px solid #444; padding-bottom: 10px; }
+        .bar-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .bar { width: 35px; transition: height 0.3s ease; min-height: 2px; }
 
-        /* 演算法步驟說明樣式 */
         .logic-box { margin-top: 30px; padding: 25px; background: #fffdf0; border-left: 5px solid #ffc107; border-radius: 4px; }
         .logic-title { font-weight: bold; color: #856404; font-size: 18px; margin-bottom: 12px; }
         .logic-content { font-size: 15px; color: #533f03; line-height: 1.8; }
         .step-item { margin-bottom: 8px; }
-
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="margin-top:0">A/B 測試 - 貝氏機器學習演算法</h2>
-
-<div style="font-size: 13px; color: #666; margin-bottom: 25px; padding-left: 12px; border-left: 3px solid #2196f3; line-height: 1.6;">
-    <strong>來源：</strong> Ananth Narayanan, "Bayesian Machine Learning A/B Testing Techniques for Reliability Practitioners" (2025 RAMS Paper) <br>
-    <strong>開發：</strong> QRM / Henry Luo
-</div>
-
-    <div class="row-rates">
-        <div class="field"><label>Design A 通過率</label><input type="number" id="rate0" value="0.5" step="0.1"></div>
-        <div class="field"><label>Design B 通過率</label><input type="number" id="rate1" value="0.8" step="0.1"></div>
-        <div class="field"><label>Design C 通過率</label><input type="number" id="rate2" value="0.9" step="0.1"></div>
+    <div class="header-section">
+        <h2 style="margin:0;">A/B 測試 - 貝氏機器學習演算法</h2>
+        <div class="source-info">
+            <strong>RAMS Paper:</strong> Ananth Narayanan, "Bayesian Machine Learning A/B Testing Techniques for Reliability Practitioners" (2025 RAMS Paper)<br>
+            <strong>Developer:</strong> QRM / Henry Luo
+        </div>
     </div>
 
-    <div class="row-algo">
-        <div class="field">
-            <label>選擇演算法</label>
-            <select id="algo" onchange="resetAll()">
-                <option value="ts">Thompson Sampling (湯普森採樣)</option>
-                <option value="ucb1">UCB1 (上信心界限)</option>
-                <option value="egreedy">Epsilon-Greedy (ε-貪婪)</option>
+    <div class="config-row">
+        <div class="field" style="max-width: 250px;">
+            <label>1. 選擇比較個數 (2~4)</label>
+            <select id="item-count" onchange="initApp()">
+                <option value="2">2 個</option>
+                <option value="3" selected>3 個 (預設)</option>
+                <option value="4">4 個</option>
             </select>
         </div>
-        <div id="eps-div" class="field hidden"><label>探索率 (ε)</label><input type="number" id="epsilon" value="0.1" step="0.05"></div>
+    </div>
+
+    <div class="config-row">
+        <span class="config-label">2. 設定各方案真實通過率 (Ground Truth)</span>
+        <div id="rates-container" class="rates-grid"></div>
+    </div>
+
+    <div class="config-row">
+        <div class="flex-group">
+            <div class="field">
+                <label>3. 選擇演算法策略</label>
+                <select id="algo" onchange="syncAlgoUI()">
+                    <option value="ts">Thompson Sampling (湯普森採樣)</option>
+                    <option value="ucb1">UCB1 (上信心界限)</option>
+                    <option value="egreedy">Epsilon-Greedy (ε-貪婪)</option>
+                </select>
+            </div>
+            <div id="eps-div" class="field hidden">
+                <label>探索率 (ε)</label>
+                <input type="number" id="epsilon" value="0.1" step="0.05">
+            </div>
+        </div>
     </div>
 
     <div class="btn-group">
-        <button class="btn btn-run" onclick="execute(1)">執行 +1 次</button>
-        <button class="btn btn-run" onclick="execute(10)">執行 +10 次</button>
-        <button class="btn btn-run" onclick="execute(100)">執行 +100 次</button>
-        <button class="btn btn-reset" onclick="resetAll()">重設數據</button>
+        <button class="btn btn-run" onclick="runSim(1)">執行 +1 次</button>
+        <button class="btn btn-run" onclick="runSim(10)">執行 +10 次</button>
+        <button class="btn btn-run" onclick="runSim(100)">執行 +100 次</button>
+        <button class="btn btn-reset" onclick="resetData()">數據重設</button>
     </div>
 
-    <div class="main-grid">
-        <table>
-            <thead>
-                <tr><th>方案</th><th>測試次數</th><th>觀察勝率</th><th id="metric-name">評估指標</th></tr>
-            </thead>
-            <tbody>
-                <tr><td style="color:#ff6384; font-weight:bold;">A</td><td id="c0">0</td><td id="p0">0%</td><td id="m0">-</td></tr>
-                <tr><td style="color:#36a2eb; font-weight:bold;">B</td><td id="c1">0</td><td id="p1">0%</td><td id="m1">-</td></tr>
-                <tr><td style="color:#4bc0c0; font-weight:bold;">C</td><td id="c2">0</td><td id="p2">0%</td><td id="m2">-</td></tr>
-            </tbody>
-        </table>
-        <div class="chart-container">
-            <div class="bar-wrapper"><div id="bar0" class="bar" style="background:#ff6384; height:0px;"></div><div style="font-size:12px;margin-top:5px;">A</div></div>
-            <div class="bar-wrapper"><div id="bar1" class="bar" style="background:#36a2eb; height:0px;"></div><div style="font-size:12px;margin-top:5px;">B</div></div>
-            <div class="bar-wrapper"><div id="bar2" class="bar" style="background:#4bc0c0; height:0px;"></div><div style="font-size:12px;margin-top:5px;">C</div></div>
+    <div class="result-grid">
+        <div>
+            <table>
+                <thead>
+                    <tr><th>方案</th><th>測試次數</th><th>觀察勝率</th><th id="metric-name">指標</th></tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+            <p style="font-size:13px; color:#666; margin-top:15px;">總測試次數：<span id="total-display" style="font-weight:bold; color:#2196f3;">0</span></p>
         </div>
+        <div class="chart-container" id="chart-container"></div>
     </div>
 
     <div class="logic-box">
-        <div class="logic-title" id="logic-title">演算法步驟說明</div>
-        <div class="logic-content" id="logic-content"></div>
+        <div class="logic-title" id="logic-title"></div>
+        <div id="logic-content" class="logic-content"></div>
     </div>
 </div>
 
 <script>
-    let counts, wins, alphas, betas, total, lastScores;
+    const COLORS = ['#ff6384', '#36a2eb', '#4bc0c0', '#ff9f40'];
+    const NAMES = ['A', 'B', 'C', 'D'];
+    const DEF_RATES = [0.5, 0.8, 0.9, 0.7];
 
+    let N, counts, wins, alphas, betas, total, lastScores;
+
+    // 您偏好的詳細說明內容
     const descriptions = {
         ts: {
             title: "Thompson Sampling (湯普森採樣) 執行步驟：",
@@ -115,7 +140,7 @@
             title: "UCB1 (Upper Confidence Bound) 執行步驟：",
             header: "UCB 指標值",
             steps: [
-                "1. <b>初始階段</b>：前三輪確保 A、B、C 每個方案都至少測過一次。",
+                "1. <b>初始階段</b>：前 N 輪確保每個方案都至少測過一次。",
                 "2. <b>計算指標</b>：指標 = 目前平均勝率 + <b>√[(2 * ln 總次數) / 該方案次數]</b>。",
                 "3. <b>決策邏輯</b>：加成項代表「不確定性」。選指標最高的，等於是給測得少的方案一個機會。",
                 "4. <b>動態平衡</b>：隨測試次數增加，加成項會縮小，演算法會逐漸集中在表現最好的方案。",
@@ -128,24 +153,53 @@
             steps: [
                 "1. 設定一個探索率 <b>ε</b> (例如 0.1)。",
                 "2. 產生一個 0 到 1 之間的隨機數。",
-                "3. 如果隨機數 < ε，進行<b>「探索」</b>：隨機從 A、B、C 中選一個。",
+                "3. 如果隨機數 < ε，進行<b>「探索」</b>：隨機從所有方案中選一個。",
                 "4. 如果隨機數 > ε，進行<b>「開發」</b>：選擇目前平均通過率最高的方案。",
                 "5. 更新結果並重新計算該方案的平均勝率。"
             ]
         }
     };
 
-    function resetAll() {
-        counts = [0,0,0]; wins = [0,0,0]; alphas = [1,1,1]; betas = [1,1,1]; total = 0; lastScores = [0,0,0];
+    function initApp() {
+        N = parseInt(document.getElementById('item-count').value);
+        const ratesDiv = document.getElementById('rates-container');
+        ratesDiv.innerHTML = '';
+        
+        for(let i=0; i<N; i++) {
+            let val = (N == 2) ? (i == 0 ? 0.95 : 0.97) : DEF_RATES[i];
+            ratesDiv.innerHTML += `
+                <div class="rate-box">
+                    <label style="color:${COLORS[i]}">Design ${NAMES[i]}</label>
+                    <input type="number" id="r${i}" value="${val}" step="0.01" min="0" max="1">
+                </div>`;
+        }
+        
+        document.getElementById('table-body').innerHTML = Array.from({length:N}, (_,i) => 
+            `<tr><td style="color:${COLORS[i]}; font-weight:bold;">${NAMES[i]}</td><td id="c${i}">0</td><td id="p${i}">0%</td><td id="m${i}">-</td></tr>`
+        ).join('');
+        
+        document.getElementById('chart-container').innerHTML = Array.from({length:N}, (_,i) => 
+            `<div class="bar-wrapper"><div id="bar${i}" class="bar" style="background:${COLORS[i]}; height:0px;"></div><div style="font-size:12px;margin-top:5px;font-weight:bold;">${NAMES[i]}</div></div>`
+        ).join('');
+        
+        syncAlgoUI();
+    }
+
+    function syncAlgoUI() {
         const algo = document.getElementById('algo').value;
         const data = descriptions[algo];
-
-        // 更新介面
         document.getElementById('eps-div').className = (algo === 'egreedy' ? 'field' : 'field hidden');
         document.getElementById('metric-name').innerText = data.header;
         document.getElementById('logic-title').innerText = data.title;
-        document.getElementById('logic-content').innerHTML = data.steps.map(s => `<div class="step-item">${s}</div>`).join('');
         
+        // 動態替換「前 N 輪」文字並生成列表
+        let stepsHtml = data.steps.map(s => `<div class="step-item">${s.replace('前 N 輪', '前 ' + N + ' 輪')}</div>`).join('');
+        document.getElementById('logic-content').innerHTML = stepsHtml;
+        resetData();
+    }
+
+    function resetData() {
+        counts = Array(N).fill(0); wins = Array(N).fill(0); alphas = Array(N).fill(1); betas = Array(N).fill(1); total = 0; lastScores = Array(N).fill(0);
         updateUI();
     }
 
@@ -155,55 +209,53 @@
         return x / (x + y);
     }
 
-    function pickBestIdx(arr) {
-        let max = Math.max(...arr);
-        let candidates = [];
-        arr.forEach((v, i) => { if(Math.abs(v - max) < 0.00001) candidates.push(i); });
-        return candidates[Math.floor(Math.random() * candidates.length)];
-    }
-
-    function execute(steps) {
-        const rates = [parseFloat(document.getElementById('rate0').value), parseFloat(document.getElementById('rate1').value), parseFloat(document.getElementById('rate2').value)];
+    function runSim(steps) {
         const algo = document.getElementById('algo').value;
+        const rates = Array.from({length:N}, (_,i) => parseFloat(document.getElementById(`r${i}`).value) || 0);
         
         for(let s=0; s<steps; s++) {
             let idx;
             if(algo === 'ts') {
-                lastScores = [rbeta(alphas[0], betas[0]), rbeta(alphas[1], betas[1]), rbeta(alphas[2], betas[2])];
-                idx = pickBestIdx(lastScores);
+                lastScores = alphas.map((a, i) => rbeta(a, betas[i]));
             } else if(algo === 'ucb1') {
                 if(counts.includes(0)) {
-                    idx = counts.indexOf(0);
-                    lastScores = [0,0,0];
+                    idx = counts.indexOf(0); 
+                    lastScores = Array(N).fill(0); // 初始化階段顯示 0
                 } else {
                     lastScores = counts.map((n, i) => (wins[i]/n) + Math.sqrt(2 * Math.log(total)/n));
-                    idx = pickBestIdx(lastScores);
                 }
             } else {
                 const eps = parseFloat(document.getElementById('epsilon').value);
                 lastScores = counts.map((n, i) => n === 0 ? 0 : wins[i]/n);
-                if(Math.random() < eps) idx = Math.floor(Math.random()*3);
-                else idx = pickBestIdx(lastScores);
+                if(Math.random() < eps) idx = Math.floor(Math.random() * N);
             }
+
+            if(idx === undefined) {
+                let max = Math.max(...lastScores);
+                let cand = []; lastScores.forEach((v, i) => { if(Math.abs(v-max) < 1e-7) cand.push(i); });
+                idx = cand[Math.floor(Math.random() * cand.length)];
+            }
+
             const win = Math.random() < rates[idx] ? 1 : 0;
-            counts[idx]++; wins[idx]+=win; total++;
+            counts[idx]++; wins[idx] += win; total++;
             if(win) alphas[idx]++; else betas[idx]++;
+            idx = undefined;
         }
         updateUI();
     }
 
     function updateUI() {
-        for(let i=0; i<3; i++) {
+        const maxC = Math.max(...counts, 1);
+        for(let i=0; i<N; i++) {
             document.getElementById(`c${i}`).innerText = counts[i];
             document.getElementById(`p${i}`).innerText = counts[i] === 0 ? "0%" : (wins[i]/counts[i]*100).toFixed(1) + "%";
             document.getElementById(`m${i}`).innerText = total === 0 ? "-" : lastScores[i].toFixed(3);
-            const maxCount = Math.max(...counts, 1);
-            document.getElementById(`bar${i}`).style.height = (counts[i]/maxCount*160) + "px";
+            document.getElementById(`bar${i}`).style.height = (counts[i]/maxC * 160) + "px";
         }
+        document.getElementById('total-display').innerText = total;
     }
-    resetAll();
+
+    initApp();
 </script>
 </body>
-
 </html>
-
