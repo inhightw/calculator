@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>硫化腐蝕活化能計算工具 | 失效物理分析</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: rgba(22, 27, 34, 0.7);
+            --primary: #58a6ff;
+            --secondary: #8b949e;
+            --success: #2ea043;
+            --error: #f85149;
+            --alert: #d29922;
+            --text-main: #c9d1d9;
+            --text-heading: #f0f6fc;
+            --border-color: #30363d;
+            --input-bg: #010409;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, rgba(88, 166, 255, 0.1), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(46, 160, 67, 0.05), transparent 40%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--text-heading);
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--secondary);
+            font-size: 1.1rem;
+        }
+
+        .section-title {
+            color: var(--text-heading);
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 8px;
+            margin-bottom: 24px;
+            margin-top: 40px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(88, 166, 255, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+
+        input {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+        }
+
+        .btn-primary {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #1f6feb, #3b82f6);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #238636, #2ea043);
+            box-shadow: 0 4px 14px rgba(46, 160, 67, 0.3);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(46, 160, 67, 0.4);
+        }
+
+        .results {
+            display: none;
+            animation: fadeIn 0.4s ease;
+            margin-bottom: 40px;
+        }
+
+        .res-box {
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid rgba(88, 166, 255, 0.3);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .res-box-success {
+            background: rgba(46, 160, 67, 0.1);
+            border-color: rgba(46, 160, 67, 0.3);
+        }
+
+        .res-val {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: var(--primary);
+            display: block;
+        }
+
+        .res-val.green {
+            color: var(--success);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>硫化腐蝕活化能計算工具</h1>
+            <div class="subtitle">失效物理 (Physics of Failure) - 潛伏期與腐蝕期獨立加速模型</div>
+        </div>
+
+        <!-- ================= 區塊 1 ================= -->
+        <h2 class="section-title">第一區：建立活化能模型 (Ea Modeling)</h2>
+        <div class="grid-container">
+            <!-- 腐蝕期參數 -->
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--text-heading);">A. 腐蝕期參數</h3>
+                <label style="color:var(--primary); margin-bottom: 8px;">測試條件 1</label>
+                <div class="form-row">
+                    <div class="form-group"><label for="t1">溫度 (°C)</label><input type="number" id="t1" value="105"
+                            step="0.1"></div>
+                    <div class="form-group"><label for="rate1">腐蝕速率 (A/day)</label><input type="number" id="rate1"
+                            value="60425" step="1"></div>
+                </div>
+
+                <label style="color:var(--primary); margin-bottom: 8px;">測試條件 2</label>
+                <div class="form-row">
+                    <div class="form-group"><label for="t2">溫度 (°C)</label><input type="number" id="t2" value="60"
+                            step="0.1"></div>
+                    <div class="form-group"><label for="rate2">腐蝕速率 (A/day)</label><input type="number" id="rate2"
+                            value="1184" step="1"></div>
+                </div>
+
+                <hr style="border:none; border-top:1px solid var(--border-color); margin:20px 0;">
+                <label style="color:var(--primary); margin-bottom: 8px;">產品設計基準</label>
+                <div class="form-row">
+                    <div class="form-group"><label for="thickness">內部銀厚度 (A)</label><input type="number" id="thickness"
+                            value="60000" step="100"></div>
+                    <div class="form-group"><label for="test_corr_hr">測試 1 腐蝕失效時間 (小時)</label><input type="number"
+                            id="test_corr_hr" value="24" step="1"></div>
+                </div>
+            </div>
+
+            <!-- 潛伏期參數 -->
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--text-heading);">B. 潛伏期參數</h3>
+                <label style="color:var(--primary); margin-bottom: 8px;">潛伏測試條件</label>
+                <div class="form-row">
+                    <div class="form-group"><label for="t_test">測試溫度 (°C)</label><input type="number" id="t_test"
+                            value="105" step="0.1"></div>
+                    <div class="form-group"><label for="inc_test_hr">潛伏期時間 (小時)</label><input type="number"
+                            id="inc_test_hr" value="96" step="0.5"></div>
+                </div>
+
+                <label style="color:var(--primary); margin-bottom: 8px;">要求總壽命環境推估</label>
+                <div class="form-row">
+                    <div class="form-group"><label for="lifetest_t_field">內部 Bead 溫度 (°C)</label><input type="number"
+                            id="lifetest_t_field" value="45" step="0.1"></div>
+                    <div class="form-group"><label for="life_months">要求總壽命 (個月)</label><input type="number"
+                            id="life_months" value="24" step="0.5"></div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="buildModel()">執行第一區：建立活化能推算</button>
+
+        <div id="results_phase1" class="results">
+            <h3 style="text-align:center;">第一區：模型算出之活化能</h3>
+            <div class="grid-container">
+                <div class="res-box">
+                    <div>(1) 腐蝕期活化能 E<sub>a1</sub></div>
+                    <span class="res-val" id="res_ea1">-- eV</span>
+                </div>
+                <div class="res-box">
+                    <div>(2) 潛伏期活化能 E<sub>a2</sub></div>
+                    <span class="res-val" id="res_ea2">-- eV</span>
+                    <div id="err_msg" style="color:var(--error); font-size:0.9rem; margin-top:10px;"></div>
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 20px; font-size: 0.95rem; color: var(--secondary); background: rgba(22, 27, 34, 0.4); padding: 20px; border-radius: 12px; border: 1px dashed rgba(88, 166, 255, 0.3);">
+                <div style="color: var(--primary); font-weight: 600; margin-bottom: 12px; font-size: 1.05rem;">💡 阿瑞尼士
+                    (Arrhenius) 加速模型推導原理：</div>
+
+                <div
+                    style="font-family: monospace; font-size: 1rem; color: var(--text-heading); margin-bottom: 8px; padding-left: 10px; background: rgba(1, 4, 9, 0.5); padding: 10px; border-radius: 6px;">
+                    活化能 E<sub>a</sub> = [ k &times; ln(Rate<sub>1</sub> / Rate<sub>2</sub>) ] &div; [ (1 /
+                    T<sub>2</sub>) - (1 / T<sub>1</sub>) ]
+                </div>
+                <div
+                    style="font-family: monospace; font-size: 1rem; color: var(--text-heading); margin-bottom: 8px; padding-left: 10px; background: rgba(1, 4, 9, 0.5); padding: 10px; border-radius: 6px;">
+                    壽命預測 Time<sub>目標</sub> = Time<sub>基準</sub> &times; exp [ (E<sub>a</sub> / k) &times; (1 /
+                    T<sub>目標</sub> - 1 / T<sub>基準</sub>) ]
+                </div>
+
+                <div style="margin-top: 12px; font-size: 0.9rem;">
+                    * 註：
+                    <code
+                        style="background: var(--input-bg); padding: 2px 5px; border-radius: 4px; color: var(--primary);">k</code>
+                    為波茲曼常數 (8.617&times;10<sup>-5</sup> eV/K)；
+                    <code
+                        style="background: var(--input-bg); padding: 2px 5px; border-radius: 4px; color: var(--primary);">T</code>
+                    為絕對溫度 (K)；
+                    <code
+                        style="background: var(--input-bg); padding: 2px 5px; border-radius: 4px; color: var(--primary);">Rate</code>
+                    定義為 1 / Time。
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 區塊 2 ================= -->
+        <h2 class="section-title" id="sec2">第二區：客戶環境總壽命預測 (Life Prediction)</h2>
+        <div class="card" style="margin-bottom:30px;">
+            <p style="color:var(--secondary); font-size:0.95rem;">此區塊直接套用上述已建立之模型 (Ea1, Ea2)，預測在指定客戶 Bead 溫度下的各階段壽命。</p>
+            <div class="form-row">
+                <div class="form-group"><label>腐蝕期活化能 (eV)</label><input id="pred_ea1" type="number" step="0.0001">
+                </div>
+                <div class="form-group"><label>潛伏期活化能 (eV)</label><input id="pred_ea2" type="number" step="0.0001">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>客戶環境內部 Bead 溫度 (°C)</label><input id="pred_t_field" type="number"
+                        value="45" step="0.1"></div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button class="btn-primary btn-secondary" style="margin-bottom:0;"
+                        onclick="predictLife()">預測客戶總壽命</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results_phase2" class="results">
+            <h3 style="text-align:center;">第二區：各階段壽命預測結果明細</h3>
+            <div class="grid-container">
+                <div class="card" style="border-left: 4px solid var(--secondary);">
+                    <div>(1) 封裝防護層的潛伏期能撐多久？</div>
+                    <div class="res-val" id="res_pred_inc">-- 天</div>
+                </div>
+                <div class="card" style="border-left: 4px solid var(--error);">
+                    <div>(2) 內部銀層被徹底硫化需要多久？</div>
+                    <div class="res-val" style="color:var(--error);" id="res_pred_corr">-- 天</div>
+                </div>
+            </div>
+            <div class="card" style="border: 2px solid var(--success); text-align:center; padding: 30px;">
+                <div style="font-size:1.2rem; margin-bottom:10px;">總預期壽命 (潛伏期 + 腐蝕期)</div>
+                <div class="res-val green" style="font-size: 3rem;" id="res_pred_total">-- 天</div>
+                <div style="color:var(--text-main); font-size:1.1rem;">約等於 <strong id="res_pred_months"
+                        style="color:white;">-- 個月</strong> 或 <strong id="res_pred_years" style="color:white;">--
+                        年</strong></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const KB = 8.617333262145e-5; // eV/K
+
+        function calcEa(rate1, t1_c, rate2, t2_c) {
+            const t1_k = parseFloat(t1_c) + 273.15;
+            const t2_k = parseFloat(t2_c) + 273.15;
+            return Math.log(rate1 / rate2) * KB / (1 / t2_k - 1 / t1_k);
+        }
+
+        function calcRate(rate_ref, t_ref_c, t_target_c, ea) {
+            const t_ref_k = parseFloat(t_ref_c) + 273.15;
+            const t_target_k = parseFloat(t_target_c) + 273.15;
+            return rate_ref * Math.exp((ea / KB) * (1 / t_ref_k - 1 / t_target_k));
+        }
+
+        function buildModel() {
+            try {
+                const t1 = document.getElementById('t1').value;
+                const rate1 = document.getElementById('rate1').value;
+                const t2 = document.getElementById('t2').value;
+                const rate2 = document.getElementById('rate2').value;
+                const test_corr_hr = document.getElementById('test_corr_hr').value;
+
+                const t_test = document.getElementById('t_test').value;
+                const inc_test_hr = document.getElementById('inc_test_hr').value;
+                const t_field = document.getElementById('lifetest_t_field').value;
+                const life_months = document.getElementById('life_months').value;
+
+                // 1. Calculate Ea1
+                const ea1 = calcEa(rate1, t1, rate2, t2);
+                document.getElementById('res_ea1').innerText = ea1.toFixed(4) + ' eV';
+                document.getElementById('pred_ea1').value = ea1.toFixed(4); // 自動帶入第二區
+
+                // 2. Field Times at target Temp
+                const rate_field = calcRate(rate1, t1, t_field, ea1);
+                const test_corr_days = parseFloat(test_corr_hr) / 24.0;
+                const field_corr_days = test_corr_days * (rate1 / rate_field);
+
+                const total_life_days = life_months * (365 / 12);
+                const field_inc_days = total_life_days - field_corr_days;
+
+                if (field_inc_days <= 0) {
+                    document.getElementById('res_ea2').innerText = 'N/A';
+                    document.getElementById('err_msg').innerText = `無法計算潛伏活化能：壽命 ${total_life_days.toFixed(1)} 天不足以滿足純銀腐蝕時間 ${field_corr_days.toFixed(1)} 天。`;
+                    document.getElementById('pred_ea2').value = '';
+                } else {
+                    document.getElementById('err_msg').innerText = '';
+                    // 3. Calculate Ea2
+                    const test_inc_days = inc_test_hr / 24.0;
+                    const ea2 = calcEa((1 / test_inc_days), t_test, (1 / field_inc_days), t_field);
+                    document.getElementById('res_ea2').innerText = ea2.toFixed(4) + ' eV';
+                    document.getElementById('pred_ea2').value = ea2.toFixed(4); // 自動帶入第二區
+                }
+
+                document.getElementById('results_phase1').style.display = 'block';
+                document.getElementById('sec2').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (e) { alert('計算錯誤，請檢查數值格式'); }
+        }
+
+        function predictLife() {
+            try {
+                const ea1 = parseFloat(document.getElementById('pred_ea1').value);
+                const ea2 = parseFloat(document.getElementById('pred_ea2').value);
+                const t_field = parseFloat(document.getElementById('pred_t_field').value);
+
+                // Fetch reference variables from phase 1 (Used as basis for exponential shift)
+                const t1 = parseFloat(document.getElementById('t1').value);
+                const test_corr_hr = parseFloat(document.getElementById('test_corr_hr').value);
+                const t_test = parseFloat(document.getElementById('t_test').value);
+                const inc_test_hr = parseFloat(document.getElementById('inc_test_hr').value);
+
+                if (isNaN(ea1) || isNaN(ea2) || isNaN(t_field)) {
+                    alert("請確保腐蝕活化能、潛伏活化能及 Bead 溫度皆已填寫！"); return;
+                }
+
+                const t1_k = t1 + 273.15;
+                const t_test_k = t_test + 273.15;
+                const Target_k = t_field + 273.15;
+
+                // Apply Arrhenius acceleration factor (AF) to reference Test Time
+                // Time_target = Time_test * exp [ (Ea / K) * (1/T_target - 1/T_test) ]
+
+                const test_corr_days = test_corr_hr / 24.0;
+                const test_inc_days = inc_test_hr / 24.0;
+
+                const field_corr_days = test_corr_days * Math.exp((ea1 / KB) * (1 / Target_k - 1 / t1_k));
+                const field_inc_days = test_inc_days * Math.exp((ea2 / KB) * (1 / Target_k - 1 / t_test_k));
+
+                const total_life_days = field_inc_days + field_corr_days;
+
+                document.getElementById('res_pred_inc').innerText = field_inc_days.toFixed(1) + ' 天';
+                document.getElementById('res_pred_corr').innerText = field_corr_days.toFixed(1) + ' 天';
+
+                document.getElementById('res_pred_total').innerText = total_life_days.toFixed(1) + ' 天';
+                document.getElementById('res_pred_months').innerText = (total_life_days / (365 / 12)).toFixed(1) + ' 個月';
+                document.getElementById('res_pred_years').innerText = (total_life_days / 365.25).toFixed(2) + ' 年';
+
+                document.getElementById('results_phase2').style.display = 'block';
+                document.getElementById('results_phase2').scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+            } catch (e) {
+                alert('預測過程發生錯誤，請檢查資料: ' + e);
+            }
+        }
+    </script>
+
+</body>
+
+</html>
