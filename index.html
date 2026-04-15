@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,7 +61,7 @@
             right: -100px;
             animation-delay: -5s;
         }
-        
+
         .blob-3 {
             width: 300px;
             height: 300px;
@@ -72,9 +73,17 @@
         }
 
         @keyframes move {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(50px, 100px) scale(1.1); }
-            100% { transform: translate(-50px, -50px) scale(0.9); }
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(50px, 100px) scale(1.1);
+            }
+
+            100% {
+                transform: translate(-50px, -50px) scale(0.9);
+            }
         }
 
         .container {
@@ -181,7 +190,7 @@
             font-weight: 300;
             margin-bottom: 1.5rem;
         }
-        
+
         .card-footer {
             display: flex;
             align-items: center;
@@ -199,7 +208,7 @@
             margin-left: 8px;
             transition: transform 0.3s;
         }
-        
+
         .card:hover .card-footer {
             color: #a78bfa;
         }
@@ -209,11 +218,17 @@
         }
 
         @media (max-width: 768px) {
-            h1 { font-size: 2.5rem; }
-            .container { padding: 2rem 1.5rem; }
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 2rem 1.5rem;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="blob blob-1"></div>
@@ -227,14 +242,17 @@
         </header>
 
         <div class="grid">
-            
+
             <a href="./RDT-Sample-Size/index.html" class="card">
                 <div class="card-icon">🎯</div>
                 <h2 class="card-title">RDT Sample Size</h2>
                 <p class="card-desc">信賴性展示測試 (Reliability Demonstration Test) 的樣本數計算機，支援不同的信心水準與風險評估參數。</p>
                 <div class="card-footer">
                     Open Tool
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
                 </div>
             </a>
 
@@ -244,7 +262,10 @@
                 <p class="card-desc">電子元件壽命與降額分析 (Derating) 評估工具，協助計算關鍵零件之預期壽命。</p>
                 <div class="card-footer">
                     Open Tool
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
                 </div>
             </a>
 
@@ -254,27 +275,36 @@
                 <p class="card-desc">硫化失效物理機制 (Physics of Failure) 計算器，評估含硫環境對電子產品的腐蝕影響與風險。</p>
                 <div class="card-footer">
                     Open Tool
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
                 </div>
             </a>
 
-            <a href="./Bayesian-ML-algorithms.html" class="card">
+            <a href="./Bayesian-ML-algorithms/index.html" class="card">
                 <div class="card-icon">🧠</div>
                 <h2 class="card-title">Bayesian ML Algorithms</h2>
                 <p class="card-desc">貝氏機器學習演算法展示，應用於可靠度預測與數據分析的進階統計模型。</p>
                 <div class="card-footer">
                     Open Tool
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
                 </div>
             </a>
 
-            <a href="./CAF.html" class="card">
+            <a href="./CAF/index.html" class="card">
                 <div class="card-icon">⚡</div>
                 <h2 class="card-title">CAF & Acceleration Factors</h2>
                 <p class="card-desc">提供各種環境應力下的加速因子 (Acceleration Factor) 計算，如 Arrhenius 與 Coffin-Manson 模型等。</p>
                 <div class="card-footer">
                     Open Tool
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
                 </div>
             </a>
 
@@ -282,4 +312,5 @@
     </div>
 
 </body>
+
 </html>
