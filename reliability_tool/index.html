@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可靠度測試規劃工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <main class="container">
+        <header class="header">
+            <h1>可靠度測試規劃工具</h1>
+            <p>幫助您了解可靠度測試脈絡，並動態計算測試時間需求。</p>
+        </header>
+
+        <section class="glass-card context-section">
+            <h2>1. 測試脈絡說明</h2>
+            <div class="context-grid">
+                <div class="context-box">
+                    <h3>🎯 測試對象</h3>
+                    <p id="ctx-object">系統、模組或零件。於初期設計階段識別潛在的失效，以降低實際使用中的失效機率，提升產品品質。</p>
+                </div>
+                <div class="context-box">
+                    <h3>⚙️ 失效機制</h3>
+                    <p id="ctx-mechanism">根據產品的物理或化學劣化等潛在失效模式選定。不同的失效機制需對應合適的可靠度模型 (如 Arrhenius, Coffin-Manson)。</p>
+                </div>
+                <div class="context-box">
+                    <h3>🔬 測試項目</h3>
+                    <p id="ctx-item">依據選定的失效模式與國際標準規範，擬定對應的應力條件 (如溫度、濕度、震動等)，必須與實際應用場景相符。</p>
+                </div>
+                <div class="context-box">
+                    <h3>❌ 失效準則</h3>
+                    <p id="ctx-criteria">產品功能或性能不符合要求的條件。通常會根據測試前後 (Initial vs. After test) 測量數據的變化程度來制定與判定。</p>
+                </div>
+            </div>
+            <div class="info-note">
+                <span class="icon">💡</span> 此脈絡參照 <a href="https://wiki.moxa.com/spaces/QMDKMA/pages/180522076/Reliability+Test+Planning" target="_blank" style="color: #38bdf8; text-decoration: underline;">Reliability Test Planning</a>，作為 DfR 流程的核心一環。
+            </div>
+        </section>
+
+        <div class="info-note" style="margin-bottom: 1.5rem; background: rgba(245, 158, 11, 0.1); border-left-color: #f59e0b; color: #fde68a;">
+            <span class="icon">🔥</span> <strong>範例說明：</strong> 以下第 2 至第 4 區塊的動態計算，是基於<strong>與「高溫」相關的失效機制</strong>（採用 Arrhenius 加速模型）所設計的測試計畫範例。
+        </div>
+
+        <div class="calculator-grid">
+            <section class="glass-card params-section">
+                <h2>2. 應用環境與目標</h2>
+                <div class="input-group">
+                    <label for="app-temp">應用環境溫度 ($^\circ$C)</label>
+                    <input type="number" id="app-temp" value="45" step="1">
+                </div>
+                <div class="input-group">
+                    <label for="life-expectancy">預期年限 (年)</label>
+                    <input type="number" id="life-expectancy" value="5" step="0.5">
+                </div>
+                <div class="input-group">
+                    <label for="target-rel">目標可靠度 (%)</label>
+                    <input type="number" id="target-rel" value="90" step="1" min="1" max="99.99">
+                </div>
+                <div class="input-group">
+                    <label for="target-conf">信心水準 (%)</label>
+                    <input type="number" id="target-conf" value="90" step="1" min="1" max="99.99">
+                </div>
+            </section>
+
+            <section class="glass-card params-section">
+                <h2>3. 加速測試條件與假設</h2>
+                <div class="input-group">
+                    <label for="test-temp">測試溫度 ($^\circ$C)</label>
+                    <input type="number" id="test-temp" value="85" step="1">
+                </div>
+                <div class="input-group tooltip-container">
+                    <label for="activation-energy">
+                        活化能 $E_a$ (eV) <span class="info-icon">ℹ️</span>
+                    </label>
+                    <div class="tooltip">需根據實際失效機制調整。例如電遷移通常為 0.7eV。</div>
+                    <input type="number" id="activation-energy" value="0.7" step="0.05">
+                </div>
+                <div class="input-group tooltip-container">
+                    <label for="weibull-beta">
+                        Weibull 形狀參數 $\beta$ <span class="info-icon">ℹ️</span>
+                    </label>
+                    <div class="tooltip">需根據實際失效機制調整。$\beta=2$ 代表耗損期初期。</div>
+                    <input type="number" id="weibull-beta" value="2" step="0.1">
+                </div>
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted); font-size: 0.95rem;">加速係數 (AF)</span>
+                    <span id="calc-af" style="font-size: 1.5rem; font-weight: bold; color: var(--accent-color);">--</span>
+                </div>
+            </section>
+
+        <section class="glass-card result-section">
+            <h2>4. 測試時間計算結果 (動態對照表)</h2>
+            <p class="subtitle">基於以上參數，在不同樣本數下的所需測試時間 (零失效抽樣計畫)。</p>
+            
+
+
+            <div class="table-container">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>樣本數 (pcs)</th>
+                            <th>所需測試時間 (小時)</th>
+                            <th>測試天數 (天)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <!-- JS 將動態填入內容 -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
