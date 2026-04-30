@@ -55,7 +55,7 @@
             <section class="glass-card params-section">
                 <h2>2. 應用環境與目標</h2>
                 <div class="input-group">
-                    <label for="app-temp">應用環境溫度 ($^\circ$C)</label>
+                    <label for="app-temp">應用環境溫度 (°C)</label>
                     <input type="number" id="app-temp" value="45" step="1">
                 </div>
                 <div class="input-group">
@@ -75,19 +75,19 @@
             <section class="glass-card params-section">
                 <h2>3. 加速測試條件與假設</h2>
                 <div class="input-group">
-                    <label for="test-temp">測試溫度 ($^\circ$C)</label>
+                    <label for="test-temp">測試溫度 (°C)</label>
                     <input type="number" id="test-temp" value="85" step="1">
                 </div>
                 <div class="input-group tooltip-container">
                     <label for="activation-energy">
-                        活化能 $E_a$ (eV) <span class="info-icon">ℹ️</span>
+                        活化能 E<sub>a</sub> (eV) <span class="info-icon">ℹ️</span>
                     </label>
                     <div class="tooltip">需根據實際失效機制調整。例如電遷移通常為 0.7eV。</div>
                     <input type="number" id="activation-energy" value="0.7" step="0.05">
                 </div>
                 <div class="input-group tooltip-container">
                     <label for="weibull-beta">
-                        Weibull 形狀參數 $\beta$ <span class="info-icon">ℹ️</span>
+                        Weibull 形狀參數 &beta; <span class="info-icon">ℹ️</span>
                     </label>
                     <div class="tooltip">需根據實際失效機制調整。$\beta=2$ 代表耗損期初期。</div>
                     <input type="number" id="weibull-beta" value="2" step="0.1">
