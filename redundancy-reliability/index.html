@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redundancy 可靠度計算工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Background elements for glassmorphism effect -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    
+    <div class="container">
+        <header>
+            <h1>Redundancy Reliability Analyzer</h1>
+            <p>專業的系統備援可靠度分析與評估工具</p>
+        </header>
+
+        <section class="educational-section glass-panel">
+            <h2>系統架構 (System Architecture) 指南</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>串聯 (Series)</h3>
+                    <p>骨牌效應：任何單一元件失效即導致系統崩潰。</p>
+                </div>
+                <div class="card">
+                    <h3>並聯 (Parallel)</h3>
+                    <p>冗餘運作：資源全開，一息尚存系統不滅。</p>
+                </div>
+                <div class="card">
+                    <h3>備用 (Standby)</h3>
+                    <p>條件觸發：節能但引入<strong style="color: #f97316;">偵測與切換的複雜度</strong>。</p>
+                </div>
+            </div>
+
+            <div class="glass-panel-inner">
+                <h3>備用 (Standby) 複雜度解析</h3>
+                <div class="standby-categories">
+                    <div class="category-block">
+                        <h4 class="category-title">1. 備用狀態 (Standby State)</h4>
+                        <div class="cards-grid standby-cards">
+                            <div class="card inner-card">
+                                <h5>Cold (冷備用)</h5>
+                                <p>完全斷電 (λ<sub>stby</sub>=0)。最大化壽命，但接管時間較長。</p>
+                            </div>
+                            <div class="card inner-card">
+                                <h5>Warm/Hot (溫/熱備用)</h5>
+                                <p>維持啟動 (λ<sub>stby</sub>&gt;0)。會消耗壽命，但接管極快。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="category-block">
+                        <h4 class="category-title">2. 切換機制 (Switch Mechanism)</h4>
+                        <div class="cards-grid standby-cards">
+                            <div class="card inner-card">
+                                <h5>Perfect Switch</h5>
+                                <p>切換成功率 100%。無切換失敗風險之理想狀態。</p>
+                            </div>
+                            <div class="card inner-card">
+                                <h5>Imperfect Switch</h5>
+                                <p>考量切換機率 (P<sub>sw</sub> &lt; 1)。符合真實物理限制。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <main class="calculator-grid">
+            <section class="input-section glass-panel">
+                <h2>參數設定</h2>
+                <form id="calc-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="component-count" title="包含 1 個 Active 與 n-1 個 Standby">總元件數 (n)</label>
+                            <input type="number" id="component-count" value="2" min="2" max="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="mission-time">目標運作時間 (t)</label>
+                            <input type="number" id="mission-time" value="10000" min="1">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dist-type">分佈模型 (Distribution)</label>
+                        <select id="dist-type">
+                            <option value="exponential">指數分佈 (Exponential)</option>
+                            <option value="weibull">韋伯分佈 (Weibull)</option>
+                        </select>
+                    </div>
+
+                    <!-- Exponential Inputs -->
+                    <div id="exponential-inputs" class="dist-inputs">
+                        <div class="form-group">
+                            <label for="lambda-active">主元件失效率 (λ)</label>
+                            <input type="number" id="lambda-active" value="0.0001" step="0.00001">
+                        </div>
+                        <div class="form-group">
+                            <label for="lambda-stby">溫備用失效率 (λ<sub>stby</sub>)</label>
+                            <input type="number" id="lambda-stby" value="0.00005" step="0.00001" title="供 Warm Standby 計算使用">
+                        </div>
+                    </div>
+
+                    <!-- Weibull Inputs -->
+                    <div id="weibull-inputs" class="dist-inputs" style="display:none;">
+                        <div class="form-group">
+                            <label for="weibull-beta">形狀參數 (Shape β)</label>
+                            <input type="number" id="weibull-beta" value="1.5" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="weibull-eta">尺度參數 (Scale η)</label>
+                            <input type="number" id="weibull-eta" value="20000" step="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="weibull-af">溫備用壽命加速因子 (AF)</label>
+                            <input type="number" id="weibull-af" value="2" step="0.1" title="供 Warm Standby 計算使用。備用狀態下的壽命是運作時的幾倍，例如2表示備用時老化速度只有一半">
+                        </div>
+                    </div>
+
+                    <!-- Imperfect Switch Inputs -->
+                    <div id="switch-inputs" class="dist-inputs">
+                        <div class="form-group">
+                            <label for="switch-reliability">切換任務成功機率 (P<sub>sw</sub>)</label>
+                            <input type="number" id="switch-reliability" value="0.95" step="0.01" min="0" max="1" title="供所有備用(Standby)架構計算使用。若為1則代表完美切換">
+                        </div>
+                    </div>
+
+                </form>
+            </section>
+
+            <section class="results-section glass-panel">
+                <h2>可靠度分析結果 (目標時間 t)</h2>
+                
+                <div class="result-highlight">
+                    <div class="result-box">
+                        <span class="result-label">單元件 (Single)</span>
+                        <span class="result-value" id="res-single">--</span>
+                    </div>
+                    <div class="result-box">
+                        <span class="result-label">串聯 (Series)</span>
+                        <span class="result-value" id="res-series">--</span>
+                    </div>
+                    <div class="result-box">
+                        <span class="result-label">並聯 (Parallel)</span>
+                        <span class="result-value" id="res-parallel">--</span>
+                    </div>
+                </div>
+
+                <div class="result-highlight standby-row">
+                    <div class="result-box">
+                        <span class="result-label">冷備用 (Cold Perfect)</span>
+                        <span class="result-value" id="res-cold-perf">--</span>
+                    </div>
+                    <div class="result-box">
+                        <span class="result-label">冷備用 (Cold Imperfect)</span>
+                        <span class="result-value" id="res-cold-imperf">--</span>
+                    </div>
+                    <div class="result-box">
+                        <span class="result-label">溫備用 (Warm Perfect)</span>
+                        <span class="result-value" id="res-warm-perf">--</span>
+                    </div>
+                    <div class="result-box">
+                        <span class="result-label">溫備用 (Warm Imperfect)</span>
+                        <span class="result-value" id="res-warm-imperf">--</span>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="reliabilityChart"></canvas>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
