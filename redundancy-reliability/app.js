@@ -49,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let eta = parseFloat(document.getElementById('weibull-eta').value) || 1;
         let AF = parseFloat(document.getElementById('weibull-af').value) || 1;
         let AF_half = parseFloat(document.getElementById('af-half').value) || 1;
-        let R_sw = parseFloat(document.getElementById('switch-reliability').value) || 1;
         
         // Compute base arrays (Single Component)
         for (let i = 0; i <= N_steps; i++) {
