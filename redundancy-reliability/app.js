@@ -43,17 +43,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let f1_arr = [];
         
         // Distribution Parameters
-        let lambda_active = 0, lambda_stby = 0;
-        let beta = 1, eta = 1, AF = 1;
-        
-        if (dType === 'exponential') {
-            lambda_active = parseFloat(document.getElementById('lambda-active').value) || 0;
-            lambda_stby = parseFloat(document.getElementById('lambda-stby').value) || 0;
-        } else {
-            beta = parseFloat(document.getElementById('weibull-beta').value) || 1;
-            eta = parseFloat(document.getElementById('weibull-eta').value) || 1;
-            AF = parseFloat(document.getElementById('weibull-af').value) || 1;
-        }
+        let lambda_active = parseFloat(document.getElementById('lambda-active').value) || 0;
+        let lambda_stby = parseFloat(document.getElementById('lambda-stby').value) || 0;
+        let beta = parseFloat(document.getElementById('weibull-beta').value) || 1;
+        let eta = parseFloat(document.getElementById('weibull-eta').value) || 1;
+        let AF = parseFloat(document.getElementById('weibull-af').value) || 1;
+        let AF_half = parseFloat(document.getElementById('af-half').value) || 1;
+        let R_sw = parseFloat(document.getElementById('switch-reliability').value) || 1;
         
         // Compute base arrays (Single Component)
         for (let i = 0; i <= N_steps; i++) {
@@ -172,16 +168,61 @@ document.addEventListener('DOMContentLoaded', () => {
             R_warm_perf = R_next_wp; f_warm_perf = f_next_wp;
             R_warm_imp = R_next_wi; f_warm_imp = f_next_wi;
         }
+
+        // Load-Sharing Calculation (Fixed for n=2 scenario)
+        let R_load_share = new Array(N_steps + 1).fill(0);
+        let lambda_half = parseFloat(document.getElementById('lambda-half').value);
+        
+        for (let i = 0; i <= N_steps; i++) {
+            let t = t_arr[i];
+            
+            // Base survival (both survive)
+            let R_both_survive = 0;
+            if (dType === 'exponential') {
+                R_both_survive = Math.exp(-2 * lambda_half * t);
+            } else {
+                let t_e_total = t / AF_half;
+                let r_half = Math.exp(-Math.pow(t_e_total / eta, beta));
+                R_both_survive = r_half * r_half;
+            }
+            
+            let int_R_ls = 0;
+            for (let j = 0; j <= i; j++) {
+                let x = j * dt;
+                let t_remain = t - x;
+                let weight = (j === 0 || j === i) ? 0.5 : 1.0;
+                
+                let rate_first_fail = 0;
+                let R_survivor_remaining = 0;
+                
+                if (dType === 'exponential') {
+                    rate_first_fail = 2 * lambda_half * Math.exp(-2 * lambda_half * x);
+                    R_survivor_remaining = Math.exp(-lambda_active * t_remain);
+                } else {
+                    let t_e = x / AF_half;
+                    let r_half_x = Math.exp(-Math.pow(t_e / eta, beta));
+                    let f_half_x = ((beta / eta) * Math.pow(t_e / eta, beta - 1) * r_half_x) * (1 / AF_half);
+                    rate_first_fail = 2 * f_half_x * r_half_x;
+                    
+                    if (r_half_x > 0) {
+                        R_survivor_remaining = Math.exp(-Math.pow((t_remain + t_e) / eta, beta)) / r_half_x;
+                    }
+                }
+                int_R_ls += rate_first_fail * R_sw * R_survivor_remaining * weight * dt;
+            }
+            R_load_share[i] = R_both_survive + int_R_ls;
+        }
         
         // Ensure bounds
-        const sanitize = (arr) => {
-            for(let i=0; i<arr.length; i++) {
-                if(arr[i] > 1) arr[i] = 1;
-                if(arr[i] < 0) arr[i] = 0;
+        let sanitize = (arr) => {
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] > 1) arr[i] = 1;
+                if (arr[i] < 0) arr[i] = 0;
             }
         };
         sanitize(R_series);
         sanitize(R_parallel);
+        sanitize(R_load_share);
         sanitize(R_cold_perf);
         sanitize(R_cold_imp);
         sanitize(R_warm_perf);
@@ -190,15 +231,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('res-single').innerText = (R1_arr[N_steps] * 100).toFixed(2) + '%';
         document.getElementById('res-series').innerText = (R_series[N_steps] * 100).toFixed(2) + '%';
         document.getElementById('res-parallel').innerText = (R_parallel[N_steps] * 100).toFixed(2) + '%';
+        document.getElementById('res-load-share').innerText = (R_load_share[N_steps] * 100).toFixed(2) + '%';
         document.getElementById('res-cold-perf').innerText = (R_cold_perf[N_steps] * 100).toFixed(2) + '%';
         document.getElementById('res-cold-imperf').innerText = (R_cold_imp[N_steps] * 100).toFixed(2) + '%';
         document.getElementById('res-warm-perf').innerText = (R_warm_perf[N_steps] * 100).toFixed(2) + '%';
         document.getElementById('res-warm-imperf').innerText = (R_warm_imp[N_steps] * 100).toFixed(2) + '%';
         
-        drawChart(t_arr, R1_arr, R_series, R_parallel, R_cold_perf, R_cold_imp, R_warm_perf, R_warm_imp);
+        drawChart(t_arr, R1_arr, R_series, R_parallel, R_load_share, R_cold_perf, R_cold_imp, R_warm_perf, R_warm_imp);
     }
     
-    function drawChart(labels, dSingle, dSeries, dParallel, dColdPerf, dColdImp, dWarmPerf, dWarmImp) {
+    function drawChart(labels, dSingle, dSeries, dParallel, dLoadShare, dColdPerf, dColdImp, dWarmPerf, dWarmImp) {
         const ctx = document.getElementById('reliabilityChart').getContext('2d');
         if (chartInstance) {
             chartInstance.destroy();
@@ -227,9 +269,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         pointRadius: 0
                     },
                     {
-                        label: '並聯 (Parallel)',
+                        label: '並聯 (Pure Parallel)',
                         data: dParallel,
                         borderColor: '#10b981', // Green
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0
+                    },
+                    {
+                        label: '負載分擔 (Load-Sharing, n=2)',
+                        data: dLoadShare,
+                        borderColor: '#a855f7', // Purple
                         borderWidth: 2,
                         fill: false,
                         pointRadius: 0

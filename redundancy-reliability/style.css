@@ -211,6 +211,7 @@ input:focus, select:focus {
 #res-single { color: #94a3b8; }
 #res-series { color: #ef4444; }
 #res-parallel { color: #10b981; }
+#res-load-share { color: #a855f7; }
 #res-cold-perf { color: #3b82f6; }
 #res-cold-imperf { color: #60a5fa; }
 #res-warm-perf { color: #f59e0b; }
