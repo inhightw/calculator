@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貝氏可靠性樣本數計算工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="dark-theme">
+    <div id="app">
+        <header>
+            <div class="logo">
+                <i data-lucide="shield-check"></i>
+                <h1>Bayesian Reliability Planner</h1>
+            </div>
+            <p class="subtitle">基於貝氏方法的可靠性測試樣本數優化工具</p>
+        </header>
+
+        <main>
+            <!-- 步進導航 -->
+            <nav class="stepper">
+                <div class="step active" data-step="1">
+                    <span class="step-number">1</span>
+                    <span class="step-label">目標需求</span>
+                </div>
+                <div class="step" data-step="2">
+                    <span class="step-number">2</span>
+                    <span class="step-label">變更評估</span>
+                </div>
+                <div class="step" data-step="3">
+                    <span class="step-number">3</span>
+                    <span class="step-label">先驗資訊</span>
+                </div>
+                <div class="step" data-step="4">
+                    <span class="step-number">4</span>
+                    <span class="step-label">計算結果</span>
+                </div>
+            </nav>
+
+            <!-- 內容區塊 -->
+            <div class="card glass">
+                <!-- Step 1: 目標需求 -->
+                <section id="step-1" class="step-content active">
+                    <h2><i data-lucide="target"></i> 定義測試目標</h2>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label for="target-r">目標可靠度 (R %)</label>
+                            <input type="number" id="target-r" value="90" min="1" max="99.9">
+                            <span class="help-text">例如：R90 表示 90% 的產品在壽命期內不失效。</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="target-c">信心水準 (C %)</label>
+                            <input type="number" id="target-c" value="80" min="1" max="99.9">
+                            <span class="help-text">例如：C80 表示有 80% 的信心。</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="target-f">允許失敗數 (f)</label>
+                            <input type="number" id="target-f" value="0" min="0">
+                            <span class="help-text">測試期間允許出現的最大失效次數。</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="nextStep(2)">下一步 <i data-lucide="arrow-right"></i></button>
+                    </div>
+                </section>
+
+                <!-- Step 2: 變更評估 -->
+                <section id="step-2" class="step-content">
+                    <h2><i data-lucide="edit-3"></i> 修正因子評估 (DCC & RAM)</h2>
+                    
+                    <div class="factor-section">
+                        <h3>1. 設計變更程度 (DCC)</h3>
+                        <div class="form-group">
+                            <select id="dcc-select">
+                                <!-- 由 JS 動態填入 -->
+                            </select>
+                            <p id="dcc-description" class="description-text"></p>
+                        </div>
+                    </div>
+
+                    <div class="factor-section">
+                        <h3>2. 可靠性活動成熟度 (RAM)</h3>
+                        <p class="help-text">請針對以下五項活動的執行程度進行評分 (信心水準)：</p>
+                        <div id="ram-activities-container">
+                            <!-- 由 JS 動態填入 -->
+                        </div>
+                        <div class="ram-result">
+                            <span>計算所得 RAM 因子: </span>
+                            <strong id="ram-value">0.500</strong>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn btn-outline" onclick="prevStep(1)"><i data-lucide="arrow-left"></i> 上一步</button>
+                        <button class="btn btn-primary" onclick="nextStep(3)">下一步 <i data-lucide="arrow-right"></i></button>
+                    </div>
+                </section>
+
+                <!-- Step 3: 先驗資訊 -->
+                <section id="step-3" class="step-content">
+                    <h2><i data-lucide="database"></i> 選擇計算方法與輸入資訊</h2>
+                    <div class="method-selector">
+                        <div class="method-option active" data-method="B1">
+                            <div class="method-icon"><i data-lucide="award"></i></div>
+                            <div class="method-info">
+                                <h3>Method B1</h3>
+                                <p>基於歷史測試數據 (Prior Confidence)</p>
+                            </div>
+                        </div>
+                        <div class="method-option" data-method="B2">
+                            <div class="method-icon"><i data-lucide="trending-up"></i></div>
+                            <div class="method-info">
+                                <h3>Method B2</h3>
+                                <p>3 點估計法 (Beta Prior 3-Point)</p>
+                            </div>
+                        </div>
+                        <div class="method-option" data-method="B3">
+                            <div class="method-icon"><i data-lucide="layers"></i></div>
+                            <div class="method-info">
+                                <h3>Method B3</h3>
+                                <p>子系統組合 (Sub-Systems Information)</p>
+                            </div>
+                        </div>
+                        <div class="method-option" data-method="B4">
+                            <div class="method-icon"><i data-lucide="clock"></i></div>
+                            <div class="method-info">
+                                <h3>Method B4</h3>
+                                <p>可修復系統 (Gamma Prior 50/95)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 各方法的輸入面板 -->
+                    <div id="method-inputs-container">
+                        <!-- B1 Inputs -->
+                        <div id="inputs-B1" class="method-inputs active">
+                            <div class="input-grid">
+                                <div class="form-group">
+                                    <label>歷史樣本數 (n)</label>
+                                    <input type="number" id="b1-n" value="20">
+                                </div>
+                                <div class="form-group">
+                                    <label>歷史失效數 (f)</label>
+                                    <input type="number" id="b1-f" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- B2 Inputs -->
+                        <div id="inputs-B2" class="method-inputs">
+                            <div class="input-grid">
+                                <div class="form-group">
+                                    <label>最低可能可靠度 (Low R %)</label>
+                                    <input type="number" id="b2-low" value="80">
+                                </div>
+                                <div class="form-group">
+                                    <label>最可能可靠度 (Most Likely R %)</label>
+                                    <input type="number" id="b2-most" value="95">
+                                </div>
+                                <div class="form-group">
+                                    <label>最高可能可靠度 (High R %)</label>
+                                    <input type="number" id="b2-high" value="99">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- B3/B4 等面板待 JS 動態載入或預留 -->
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn btn-outline" onclick="prevStep(2)"><i data-lucide="arrow-left"></i> 上一步</button>
+                        <button class="btn btn-success" id="calculate-btn">開始計算 <i data-lucide="calculator"></i></button>
+                    </div>
+                </section>
+
+                <!-- Step 4: 計算結果 -->
+                <section id="step-4" class="step-content">
+                    <h2><i data-lucide="bar-chart-3"></i> 計算結果分析</h2>
+                    <div class="results-container">
+                        <div class="result-summary">
+                            <div class="result-box classical">
+                                <span class="label">傳統 Binomial 所需樣本數</span>
+                                <strong id="res-classical">-</strong>
+                            </div>
+                            <div class="result-box bayesian">
+                                <span class="label">貝氏方法優化後樣本數</span>
+                                <strong id="res-bayesian">-</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="comparison-chart-container">
+                            <div class="saving-badge">
+                                節省約 <span id="res-saving">0</span>% 樣本數
+                            </div>
+                            <!-- 這裡可以用 CSS 畫簡單的對比條 -->
+                        </div>
+
+                        <div class="expert-advice glass-dark">
+                            <h3><i data-lucide="info"></i> 專家建議</h3>
+                            <p id="res-advice">根據您的變更與質量活動評估，貝氏方法顯示可以有效利用先驗資訊...</p>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn btn-outline" onclick="prevStep(3)"><i data-lucide="arrow-left"></i> 調整參數</button>
+                        <button class="btn btn-primary" id="download-excel"><i data-lucide="download"></i> 下載 Excel 報告</button>
+                        <button class="btn btn-outline" onclick="location.reload()">重新開始</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Reliability Engineering Assistant. 基於貝氏方法教材實作。</p>
+        </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
