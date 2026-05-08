@@ -240,8 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   safeInit('Icons', () => {
-    if (Lucide && Lucide.createIcons) {
-      Lucide.createIcons({ icons: Lucide.icons || Lucide });
+    if (_lucide && _lucide.createIcons) {
+      _lucide.createIcons({ icons: _lucide.icons || _lucide });
     }
   });
   safeInit('TargetSelector', initTargetTypeSelector);
@@ -254,7 +254,15 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit('Subsystem', initSubsystemManager);
   safeInit('Calculate', initCalculateBtn);
   safeInit('Download', initDownloadBtn);
+
+  // === [v1.3.2] 強制掛載全域，解決 GitHub Pages 作用域問題 ===
+  window.appData = appData;
+  window.restartWizard = initWizard; 
+  console.log("💎 [System] Global API Exposed.");
 });
+
+// 修正 Lucide 全域變數對照
+const _lucide = window.lucide || window.Lucide;
 
 function initTargetTypeSelector() {
   const options = document.querySelectorAll('.type-card');
@@ -423,7 +431,7 @@ function initWizard() {
             if (nextBtn) {
               nextBtn.innerHTML = `查看計算結果 <i data-lucide="calculator"></i>`;
               nextBtn.onclick = () => document.getElementById('calculate-btn').click();
-              if (Lucide && Lucide.createIcons) Lucide.createIcons({ icons: Lucide.icons || Lucide });
+              if (_lucide && _lucide.createIcons) _lucide.createIcons({ icons: _lucide.icons || _lucide });
             }
           }
         }

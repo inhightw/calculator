@@ -392,6 +392,7 @@
         window.prevStep = nextStep;
         window.changeStep = nextStep;
     </script>
-    <script type="module" src="./src/main.js"></script>
+    <!-- 強制載入核心邏輯，移除 module 限制以解決全域作用域問題 -->
+    <script src="./src/main.js?v=1.3.2"></script>
 </body>
 </html>
