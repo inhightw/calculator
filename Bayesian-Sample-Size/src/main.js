@@ -1,10 +1,6 @@
-import * as Lucide from 'lucide';
-import * as XLSX from 'xlsx';
-import jStat from 'jstat';
-
 /**
  * Bayesian Reliability Planner - Unified Core Build
- * [v1.2.6 Precision Combined]
+ * [v1.3.1 Hotfix for GitHub Pages]
  */
 
 console.log("🚀 [System] Unified Core Loading...");
