@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bayesian Reliability Wizard | 貝氏可靠性測試規劃</title>
+    <link rel="stylesheet" href="./src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="header-content">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i data-lucide="brain-circuit" class="logo-icon"></i>
+                    <div>
+                        <h1 style="margin: 0; line-height: 1;">Bayesian Reliability Planner</h1>
+                        <span style="font-size: 0.7rem; opacity: 0.6; background: rgba(var(--primary-rgb), 0.1); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(var(--primary-rgb), 0.2);">v1.3.0 (Golden Industry Standard)</span>
+                    </div>
+                </div>
+                <div class="step-progress">
+                    <div class="step active" data-step="1"><span>目標需求</span></div>
+                    <div class="step" data-step="2"><span>診斷精靈</span></div>
+                    <div class="step" data-step="3"><span>變更評估</span></div>
+                    <div class="step" data-step="4"><span>計算結果</span></div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="content-wrapper">
+                <!-- Step 1: 目標需求 -->
+                <section id="step-1" class="step-content active">
+                    <h2><i data-lucide="target"></i> 定義測試目標</h2>
+                    <p class="help-text">請選擇您要驗證的可靠度指標類型：</p>
+                    
+                    <div class="target-type-selector">
+                        <div class="type-card active" data-type="count">
+                            <div class="type-icon"><i data-lucide="award"></i></div>
+                            <div class="type-info">
+                                <h3>可靠度 R%</h3>
+                                <p>例如：在 1 年內可靠度達到 95%</p>
+                            </div>
+                        </div>
+                        <div class="type-card" data-type="time">
+                            <div class="type-icon"><i data-lucide="clock"></i></div>
+                            <div class="type-info">
+                                <h3>平均失效間隔時間 MTBF</h3>
+                                <p>例如：MTBF 達到 50,000 小時</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="target-inputs glass-dark">
+                        <div class="form-group count-only">
+                            <label for="target-r">目標可靠度 R (%)</label>
+                            <input type="number" id="target-r" value="90" min="1" max="99.9">
+                        </div>
+                        <div class="form-group time-only" style="display:none">
+                            <label for="target-mtbf">目標平均失效間隔時間 MTBF (小時)</label>
+                            <input type="number" id="target-mtbf" value="700">
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="target-c">信心水準 C (%)</label>
+                                <input type="number" id="target-c" value="80" min="1" max="99">
+                            </div>
+                            <div class="form-group">
+                                <label for="target-f">允許失效數 f</label>
+                                <input type="number" id="target-f" value="1" min="0" max="10">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nav-actions">
+                        <button class="btn btn-primary" onclick="nextStep(2)">下一步：進入診斷精靈 <i data-lucide="arrow-right"></i></button>
+                    </div>
+                </section>
+
+                <!-- Step 2: 診斷精靈 -->
+                <section id="step-2" class="step-content">
+                    <div class="wizard-header">
+                        <h2><i data-lucide="calculator"></i> 診斷：選取最佳驗證方法</h2>
+                        <p class="help-text">根據您現有的先驗資訊（過往數據或專家經驗），精靈將推薦最適合的貝氏方法：</p>
+                    </div>
+
+                    <!-- 動態分流容器 -->
+                    <div id="step2-routing-container">
+                        <!-- 路徑 A: MTBF 導向 (B4-B5) -->
+                        <div id="path-mtbf" style="display:none">
+                            <p class="wizard-question">您具備哪種型態的 MTBF 先驗資訊？</p>
+                            <div class="wizard-options-grid">
+                                <div class="wizard-card" onclick="selectPath('B4')">
+                                    <div class="card-icon"><i data-lucide="bar-chart-3"></i></div>
+                                    <div class="card-info">
+                                        <h3>我有 MTBF 歷史統計值</h3>
+                                        <p>Method B4: 具備舊產品點估計與信心下限</p>
+                                    </div>
+                                </div>
+                                <div class="wizard-card" onclick="selectPath('B5')">
+                                    <div class="card-icon"><i data-lucide="database"></i></div>
+                                    <div class="card-info">
+                                        <h3>我有 Gamma 先驗參數</h3>
+                                        <p>Method B5: 具備統計上的 Alpha 與 Beta</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 路徑 B: 可靠度 導向 (B1-B3) -->
+                        <div id="path-reliability" style="display:none">
+                            <p class="wizard-question">您希望如何規劃您的可靠度先驗資訊？</p>
+                            <div class="wizard-options-grid">
+                                <div class="wizard-card" onclick="selectPath('B13')">
+                                    <div class="card-icon"><i data-lucide="list-checks"></i></div>
+                                    <div class="card-info">
+                                        <h3>開啟診斷精靈</h3>
+                                        <p>Method B1-B3: 根據現有數據引導至最佳路徑</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- B1-B3 動態問卷區 (由精靈開啟) -->
+                    <div id="method-wizard-content" class="glass-dark p-6 mt-6" style="display:none">
+                        <div id="wizard-question">
+                            <p id="wizard-question-text" class="text-xl mb-6"></p>
+                            <div id="wizard-options" class="wizard-options-grid"></div>
+                        </div>
+                        <div id="recommended-method-info" class="rec-badge mt-6" style="display:none">
+                            <i data-lucide="award"></i> 推薦使用：<strong id="rec-method-name">Method B1</strong>
+                        </div>
+                    </div>
+
+                    <div id="method-inputs-container" style="display:none">
+                        <div id="inputs-B1" class="method-inputs">
+                            <h3><i data-lucide="database"></i> Method B1: 歷史實體數據</h3>
+                            <div class="input-grid mb-6">
+                                <div class="form-group"><label>歷史測試樣本 n0</label><input type="number" id="b1-n" value="20"></div>
+                                <div class="form-group"><label>歷史失效數 f0</label><input type="number" id="b1-f" value="0"></div>
+                            </div>
+                            <div class="nav-actions">
+                                <button class="btn btn-primary btn-next-step" style="width: 100%;">查看計算結果 <i data-lucide="calculator"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Method B2: 專家估計 -->
+                        <div id="inputs-B2" class="method-inputs">
+                            <div class="method-header-row">
+                                <h3><i data-lucide="brain"></i> Method B2: 專家先驗資訊</h3>
+                                <div class="toggle-group" style="display: flex; gap: 4px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 8px;">
+                                    <button class="btn-toggle active" data-b2-mode="pert" style="flex:1;">3 點估計</button>
+                                    <button class="btn-toggle" data-b2-mode="helper" style="flex:1;">從歷史數據推算</button>
+                                    <button class="btn-toggle" data-b2-mode="params" style="flex:1;">直接輸入 Alpha/Beta</button>
+                                </div>
+                            </div>
+
+                            <!-- 模式 1: 3 點估計 -->
+                            <div id="b2-pert-inputs" class="input-grid">
+                                <div class="form-group"><label>保守估計 R_low (%)</label><input type="number" id="b2-low" value="88"></div>
+                                <div class="form-group"><label>最可能 R_most (%)</label><input type="number" id="b2-most" value="92"></div>
+                                <div class="form-group"><label>樂觀估計 R_high (%)</label><input type="number" id="b2-high" value="99"></div>
+                            </div>
+
+                            <!-- 模式 2: 歷史數據轉換 (對標 B2.2) -->
+                            <div id="b2-helper-inputs" style="display: none;" class="glass-dark p-4 rounded-lg">
+                                <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="form-group mb-0">
+                                        <label style="font-size: 0.8rem;">歷史測試數 n</label>
+                                        <input type="number" id="b2-helper-n" value="5">
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label style="font-size: 0.8rem;">失效數 r</label>
+                                        <input type="number" id="b2-helper-r" value="0">
+                                    </div>
+                                </div>
+                                <div id="b2-helper-preview" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.1);">
+                                    <div style="font-size: 0.85rem; color: var(--primary); margin-bottom: 0.5rem; font-weight: 600;">自動推算結果：</div>
+                                    <div style="display: flex; gap: 1.5rem; font-family: monospace; font-size: 1rem; color: #fff;">
+                                        <span>L: <strong id="help-l" style="color: var(--primary);">54.9</strong>%</span>
+                                        <span>M: <strong id="help-m">87.0</strong>%</span>
+                                        <span>H: <strong id="help-h">99.0</strong>%</span>
+                                    </div>
+                                    <div style="margin-top: 1rem;">
+                                        <button id="apply-b2-helper" class="btn btn-primary btn-sm" style="width: 100%; font-size: 0.85rem; height: 40px;">套用此推算值並進行計算</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 模式 3: 直接輸入參數 -->
+                            <div id="b2-params-inputs" style="display: none;" class="input-grid">
+                                <div class="form-group"><label>先驗 Alpha (a)</label><input type="number" id="b2-a" value="19.58" step="0.01"></div>
+                                <div class="form-group"><label>先驗 Beta (b)</label><input type="number" id="b2-b" value="213.20" step="0.01"></div>
+                                <div class="form-group info-box" style="grid-column: span 2;">
+                                    <small><i data-lucide="info"></i> a = 等效失效數+1, b = 等效成功數+1</small>
+                                </div>
+                            </div>
+                            <div class="nav-actions mt-8">
+                                <button class="btn btn-outline" onclick="prevStep(1)"><i data-lucide="arrow-left"></i> 上一步</button>
+                                <button class="btn btn-primary btn-next-step" onclick="nextStep(3)">下一步：評估變更風險 <i data-lucide="arrow-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="inputs-B3" class="method-inputs">
+                            <h3><i data-lucide="layers"></i> Method B3: 子系統組合先驗</h3>
+                            <div id="subsystems-container"></div>
+                            <button id="add-subsystem-btn" class="btn btn-outline btn-sm mb-6"><i data-lucide="plus"></i> 新增子系統</button>
+                            
+                            <div class="nav-actions mt-8">
+                                <button class="btn btn-primary btn-next-step" style="width: 100%;">查看計算結果 <i data-lucide="calculator"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="inputs-B4" class="method-inputs">
+                            <h3 style="margin-bottom: 1.5rem;"><i data-lucide="clock"></i> Method B4: MTBF 歷史數據輸入</h3>
+                            <p class="help-text" style="margin-bottom: 2rem;">請填入舊產品的原始統計數據，修正因子將在下一步進行設定：</p>
+                            
+                            <div class="input-grid mb-6">
+                                <div class="form-group">
+                                    <label>歷史 MTBF 點估計 (小時)</label>
+                                    <input type="number" id="b4-hist-mtbf" value="600" step="10">
+                                </div>
+                                <div class="form-group">
+                                    <label>歷史 95% 下限 MTBF (小時)</label>
+                                    <input type="number" id="b4-hist-low" value="580" step="10">
+                                </div>
+                            </div>
+                            
+                            <div class="nav-actions mt-8">
+                                <button class="btn btn-outline" onclick="prevStep(1)"><i data-lucide="arrow-left"></i> 上一步</button>
+                                <button class="btn btn-primary btn-next-step" onclick="nextStep(3)">下一步：評估變更風險與信心 <i data-lucide="arrow-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="inputs-B5" class="method-inputs">
+                            <h3><i data-lucide="clock"></i> Method B5: BAZE (Gamma 先驗)</h3>
+                            <div class="input-grid mb-6">
+                                <div class="form-group"><label>先驗 Alpha (等效失效)</label><input type="number" id="b5-alpha" value="1.5"></div>
+                                <div class="form-group"><label>先驗 Beta (等效時間)</label><input type="number" id="b5-beta" value="200"></div>
+                            </div>
+                            <div class="nav-actions mt-8">
+                                <button class="btn btn-outline" onclick="prevStep(1)"><i data-lucide="arrow-left"></i> 上一步</button>
+                                <button class="btn btn-primary btn-next-step" id="calculate-btn-b5" style="width: 100%;">查看計算結果 <i data-lucide="calculator"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 3: 變更評估 -->
+                <section id="step-3" class="step-content">
+                    <div id="dcc-section" class="factor-card glass-dark">
+                        <h3><i data-lucide="git-commit"></i> 設計變更程度 (DCC)</h3>
+                        <p class="help-text">評估新設計相對於歷史數據的變更程度：</p>
+                        <select id="dcc-select" class="form-select"></select>
+                    </div>
+
+                    <div class="factor-card glass-dark">
+                        <h3><i data-lucide="shield-check"></i> 信心程度評估 (RAM)</h3>
+                        <p class="help-text">主觀信心評估：請根據目前的開發狀況，評估您對產品在各項目中「能達成目標」的直覺信心 (1% ~ 99%)。</p>
+                        <div id="ram-activities-container"></div>
+                        
+                        <div class="ram-result mt-6 text-right">
+                            <span class="text-muted">最終 RAM 修正因子：</span>
+                            <span id="ram-value" class="font-bold text-secondary">0.500</span>
+                        </div>
+                    </div>
+
+                    <div class="nav-actions">
+                        <button class="btn btn-outline" onclick="prevStep(2)"><i data-lucide="arrow-left"></i> 上一步</button>
+                        <button id="calculate-btn" class="btn btn-primary btn-lg">開始計算貝氏樣本數 <i data-lucide="calculator"></i></button>
+                    </div>
+                </section>
+
+                <!-- Step 4: 計算結果 -->
+                <section id="step-4" class="step-content">
+                    <div class="results-container">
+                        <div class="results-header">
+                            <h2><i data-lucide="trending-up"></i> 測試規劃建議</h2>
+                            <p class="help-text">根據貝氏推論計算出的最佳化測試方案：</p>
+                        </div>
+
+                        <div class="results-grid">
+                            <div class="result-box classical">
+                                <div class="box-label">傳統測試 (Classical)</div>
+                                <div class="box-value"><span id="res-classical">-</span> <small>台</small></div>
+                                <div class="box-note">完全不考慮任何先驗資訊</div>
+                            </div>
+                            <div class="result-box bayesian">
+                                <div class="box-label">貝氏測試 (Bayesian)</div>
+                                <div class="box-value"><span id="res-bayesian">-</span> <small>台</small></div>
+                                <div class="box-note">整合您的先驗信心與 DCC 修正</div>
+                            </div>
+                            <div class="result-box saving">
+                                <div class="box-label">樣本節省率</div>
+                                <div class="box-value"><span id="res-saving">0</span> <small>%</small></div>
+                                <div class="box-note">相較於傳統方法的降幅</div>
+                            </div>
+                        </div>
+
+                        <div class="expert-advice glass-dark mt-8">
+                            <h3><i data-lucide="info"></i> 專家建議</h3>
+                            <p id="res-advice"></p>
+                        </div>
+
+                        <!-- 詳細技術診斷報告 -->
+                        <div class="technical-report glass-dark mt-8 p-6" style="border-top: 2px solid var(--primary);">
+                            <h3 style="color: var(--primary); margin-bottom: 1rem;"><i data-lucide="file-text"></i> 詳細技術診斷報告 (Transparency Report)</h3>
+                            <div id="tech-details" style="font-family: monospace; font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.85);">
+                                <!-- 動態注入內容 -->
+                            </div>
+                            
+                            <div class="formula-reference mt-6" style="font-size: 0.75rem; opacity: 0.7; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                                <p><strong>核心公式清單：</strong></p>
+                                <ul style="list-style: none; padding-left: 0;">
+                                    <li>• 修正因子: $R_{prior} = \min(0.995, R_{input} \times DCC \times RAM)$</li>
+                                    <li>• 期望值 (PERT): $E(R) = (L_{prior} + 4M_{prior} + H_{prior}) / 6$</li>
+                                    <li>• 變異數 (PERT): $Var(R) = ((H_{prior} - L_{prior}) / 6)^2$</li>
+                                    <li>• Beta 參數: $common = [E(R) - E(R)^2] / Var(R) - 1$</li>
+                                    <li>• 擬合參數: $a = (1 - E(R)) \times common$, $b = E(R) \times common$</li>
+                                    <li>• 貝氏求解: $Confidence = \text{Beta.DIST}(1-R_{target}, a+f, b+n-f, \text{TRUE})$</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="nav-actions mt-8">
+                            <button class="btn btn-outline" onclick="prevStep(3)"><i data-lucide="arrow-left"></i> 重新調整</button>
+                            <button id="download-excel" class="btn btn-success"><i data-lucide="download"></i> 匯出 Excel 報告</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 內聯導航函數：確保即使 main.js 載入失敗，UI 仍能切換
+        function nextStep(step) {
+            console.log("Internal Navigation to:", step);
+            
+            // Step 2 智慧分流邏輯
+            if (step === 2) {
+                const targetType = window.appData?.targetType || 'count';
+                const pathMTBF = document.getElementById('path-mtbf');
+                const pathRel = document.getElementById('path-reliability');
+                const wizardContent = document.getElementById('method-wizard-content');
+                const inputsContainer = document.getElementById('method-inputs-container');
+
+                // 先重置所有顯示狀態
+                if (pathMTBF) pathMTBF.style.display = 'none';
+                if (pathRel) pathRel.style.display = 'none';
+                if (wizardContent) wizardContent.style.display = 'none';
+                if (inputsContainer) inputsContainer.style.display = 'none';
+
+                if (targetType === 'count') {
+                    // 可靠度模式：直達問診精靈
+                    if (wizardContent) {
+                        wizardContent.style.display = 'block';
+                        // 觸發 main.js 中的初始化
+                        if (typeof window.selectPath === 'function') {
+                            window.selectPath('B13');
+                        }
+                    }
+                } else {
+                    // MTBF 模式：顯示 B4/B5 快選卡片
+                    if (pathMTBF) pathMTBF.style.display = 'block';
+                }
+            }
+
+            document.querySelectorAll('.step-content').forEach(p => p.classList.remove('active'));
+            const target = document.getElementById('step-' + step);
+            if (target) target.classList.add('active');
+
+            document.querySelectorAll('.step-progress .step').forEach((s, idx) => {
+                s.classList.toggle('active', idx + 1 <= step);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // 進入 Step 2 時，根據最新的 targetType 重新啟動精靈
+            if (step === 2 && window.restartWizard) window.restartWizard();
+
+            // 觸發 Lucide 圖示重新渲染 (如果 main.js 活著的話)
+            if (window.lucide) window.lucide.createIcons();
+        }
+        window.prevStep = nextStep;
+        window.changeStep = nextStep;
+    </script>
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>
