@@ -69,8 +69,14 @@
                 align-items: flex-start;
                 gap: 0.8rem;
             }
+            .prop-label {
+                flex: none;
+                width: 100%;
+                text-align: left;
+            }
             .prop-value {
                 width: 100%;
+                justify-content: flex-start;
             }
             .symbols-grid {
                 grid-template-columns: 1fr;
@@ -152,7 +158,8 @@
         }
 
         .prop-value input {
-            width: 100%; 
+            flex: 1;
+            min-width: 0;
             padding: 0.5rem; 
             border: 1px solid #cbd5e1; 
             border-radius: 3px; 
