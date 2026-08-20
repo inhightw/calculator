@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>液態鋁質電解電容壽命計算機</title>
+    <style>
+        /* 專業工程軟體風格 (Industrial & Enterprise Dashboard Theme) */
+        body {
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+            background-color: #eef2f5;
+            margin: 0; 
+            padding: 0;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        /* 系統頂部導覽列 */
+        .navbar {
+            background-color: #005b8f; /* 沉穩企業藍 */
+            color: white;
+            padding: 1.2rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+        }
+        
+        .navbar h1 { 
+            margin: 0; 
+            font-size: 1.4rem; 
+            font-weight: 600; 
+            letter-spacing: 0.5px;
+        }
+        
+        .navbar p { 
+            margin: 0; 
+            font-size: 0.9rem; 
+            opacity: 0.85; 
+            border-left: 1px solid rgba(255,255,255,0.3);
+            padding-left: 1rem;
+        }
+
+        .main-content {
+            max-width: 1000px;
+            margin: 2rem auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 1rem;
+            }
+            .navbar p {
+                border-left: none;
+                padding-left: 0;
+            }
+            .prop-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.8rem;
+            }
+            .prop-value {
+                width: 100%;
+            }
+            .symbols-grid {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            .symbols-grid code {
+                display: inline-block;
+                width: max-content;
+            }
+        }
+
+        /* 模組面板設計 (Panel) */
+        .panel {
+            background: white;
+            border: 1px solid #d1d8dd;
+            border-top: 4px solid #005b8f; /* 頂部重點色 */
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            background-color: #f8fafc;
+            padding: 0.8rem 1.2rem;
+            border-bottom: 1px solid #d1d8dd;
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: #005b8f;
+            display: flex;
+            align-items: center;
+        }
+
+        .panel-header::before {
+            content: "■";
+            margin-right: 8px;
+            font-size: 0.8rem;
+            color: #005b8f;
+        }
+
+        .panel-body { 
+            padding: 1.5rem; 
+            flex: 1;
+        }
+
+        /* 參數輸入表單 (Property Grid Style) */
+        .prop-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        
+        .prop-row:last-child { 
+            border-bottom: none; 
+            margin-bottom: 0; 
+            padding-bottom: 0; 
+        }
+
+        .prop-label { 
+            flex: 0 0 50%; 
+            font-size: 0.95rem; 
+            font-weight: 500; 
+            color: #475569;
+        }
+
+        .prop-value { 
+            flex: 1; 
+            display: flex; 
+            gap: 0.5rem; 
+            align-items: center;
+        }
+
+        .prop-value input {
+            width: 100%; 
+            padding: 0.5rem; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 3px; 
+            font-size: 1rem;
+            background-color: #f8fafc;
+            color: #0f172a;
+            font-weight: 500;
+        }
+        
+        .prop-value input:focus {
+            outline: none;
+            border-color: #005b8f;
+            background-color: #fff;
+        }
+
+        .unit-text {
+            font-size: 0.9rem;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .btn-secondary {
+            background: #f1f5f9; 
+            border: 1px solid #cbd5e1; 
+            padding: 0.5rem 0.8rem; 
+            border-radius: 3px; 
+            cursor: pointer; 
+            font-size: 0.85rem;
+            white-space: nowrap;
+            color: #334155;
+            transition: background 0.2s;
+        }
+
+        .btn-secondary:hover { 
+            background: #e2e8f0; 
+        }
+
+        /* 計算結果顯示區 */
+        .result-display { 
+            text-align: center; 
+            padding: 2rem 0; 
+            background-color: #f8fbff;
+            border: 1px solid #e0f2fe;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .res-val { 
+            font-size: 3rem; 
+            font-weight: 700; 
+            color: #0369a1; 
+            margin: 0; 
+            line-height: 1;
+        }
+
+        .res-unit { 
+            font-size: 1.1rem; 
+            color: #64748b; 
+            font-weight: normal;
+        }
+
+        .res-sub { 
+            font-size: 1.4rem; 
+            color: #475569; 
+            margin-top: 0.8rem; 
+            font-weight: 500;
+        }
+
+        /* 警告提示區塊 (紅字設計) */
+        .alert-red {
+            padding: 1.2rem;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-left: 4px solid #dc2626;
+            color: #dc2626; /* 依據要求使用紅字 */
+            font-size: 0.95rem;
+            border-radius: 3px;
+            display: none;
+            line-height: 1.5;
+        }
+
+        .alert-red.show { 
+            display: block; 
+        }
+        
+        .alert-red strong { 
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 700; 
+        }
+
+        /* 公式與理論說明區 */
+        .theory-panel { 
+            grid-column: 1 / -1; 
+        }
+        
+        .formula-wrapper {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .math-eq { 
+            font-family: "Cambria Math", "Times New Roman", serif; 
+            font-size: 1.8rem; 
+            letter-spacing: 1px; 
+            color: #0f172a; 
+            margin-bottom: 1.5rem;
+            padding: 1rem 2rem;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        .math-eq i { font-style: italic; }
+        .math-eq sub { font-size: 1rem; }
+        .math-eq sup { font-size: 1.2rem; }
+
+        .symbols-grid { 
+            display: grid; 
+            grid-template-columns: auto 1fr; 
+            gap: 0.8rem 1.5rem; 
+            font-size: 0.95rem; 
+            width: 100%;
+            max-width: 700px;
+            color: #334155;
+        }
+        
+        .symbols-grid code { 
+            font-family: "Cambria Math", "Times New Roman", serif; 
+            font-weight: bold; 
+            font-size: 1.1rem; 
+            background: #f1f5f9;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .notes-list { 
+            font-size: 0.95rem; 
+            color: #475569; 
+            padding-left: 1.5rem; 
+            line-height: 1.7; 
+            margin: 0;
+        }
+        
+        .notes-list li { margin-bottom: 0.6rem; }
+        .notes-list li:last-child { margin-bottom: 0; }
+        .notes-list strong { color: #1e293b; }
+        
+    </style>
+</head>
+<body>
+
+    <!-- 系統頂部導覽列 -->
+    <div class="navbar">
+        <h1>液態鋁質電解電容壽命計算機</h1>
+        <p><strong>參考 IEC 61709 (Annex F)</strong></p>
+    </div>
+
+    <div class="main-content">
+        
+        <!-- 左側：參數輸入區 -->
+        <div class="panel">
+            <div class="panel-header">測試與環境參數設定</div>
+            <div class="panel-body">
+                
+                <div class="prop-row">
+                    <div class="prop-label">
+                        Endurance 測試溫度 (T<sub>0</sub>)
+                    </div>
+                    <div class="prop-value">
+                        <input type="number" id="t0" value="105" step="1">
+                        <span class="unit-text">°C</span>
+                    </div>
+                </div>
+
+                <div class="prop-row">
+                    <div class="prop-label">
+                        Endurance 測試時間 (L<sub>0</sub>)
+                    </div>
+                    <div class="prop-value">
+                        <input type="number" id="l0" value="5000" step="1">
+                        <button id="unitToggle" class="btn-secondary" onclick="toggleUnit()">切換為 年</button>
+                    </div>
+                </div>
+
+                <div class="prop-row">
+                    <div class="prop-label">
+                        實際運作表面溫度 (T<sub>x</sub>)
+                    </div>
+                    <div class="prop-value">
+                        <input type="number" id="tx" value="65" step="1">
+                        <span class="unit-text">°C</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 右側：計算結果區 -->
+        <div class="panel">
+            <div class="panel-header">預估壽命結果 (Lx)</div>
+            <div class="panel-body">
+                
+                <div class="result-display">
+                    <div class="res-val" id="resultHours">-- <span class="res-unit">小時 (Hrs)</span></div>
+                    <div class="res-sub" id="resultYears">-- 年 (Yrs)</div>
+                </div>
+
+                <div class="alert-red" id="warningBanner">
+                    <strong>⚠️ 壽命上限提示</strong>
+                    由於電容底部的橡膠密封圈（Sealing Rubber）會隨時間自然老化與失去彈性，當公式估算之壽命大於 15 年（131,400 小時）時，基於業界實務與保守原則，請將預期壽命極限值（Maximum Expected Life）設定為 15 年。
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 下方：理論與注意事項 -->
+        <div class="panel theory-panel">
+            <div class="panel-header">液態鋁質電解電容壽命公式 (阿瑞尼斯 10°C 簡化法則)</div>
+            <div class="panel-body">
+                
+                <div class="formula-wrapper">
+                    <div class="math-eq">
+                        <i>L<sub>x</sub></i> = <i>L<sub>0</sub></i> × 2<sup>(<i>T<sub>0</sub></i> - <i>T<sub>x</sub></i>) / 10</sup>
+                    </div>
+                    
+                    <div class="symbols-grid">
+                        <code>L<sub>x</sub></code> 
+                        <div>實際運作表面溫度下之預期壽命 (Expected Lifetime)</div>
+                        
+                        <code>L<sub>0</sub></code> 
+                        <div>Endurance 測試時間 (Endurance Test Time，依據規格書)</div>
+                        
+                        <code>T<sub>0</sub></code> 
+                        <div>Endurance 測試溫度 (Endurance Test Temperature，依據規格書)</div>
+                        
+                        <code>T<sub>x</sub></code> 
+                        <div>實際運作表面溫度 (Operating Surface Temperature)</div>
+                    </div>
+                </div>
+
+                <ul class="notes-list">
+                    <li><strong>初步估算：</strong> 本工具採用 IEC 61709 標準之 10°C 法則。各電容廠牌與特定系列可能具備專屬的加速係數，本計算結果僅供一般工程初估使用。</li>
+                    <li><strong>自發熱考量：</strong> 實際運作時，除環境或表面溫度外，高頻電路中的<strong>漣波電流 (Ripple Current)</strong> 會造成電容內部產生自發熱效應 (Self-heating)。若需精確計算，需將此溫升納入考量。</li>
+                    <li><strong>極限壽命驗證：</strong> 廠商提供的 Endurance Test (耐久性測試) 屬於<strong>零失效</strong>測試保證。若專案需要精準的壽命結果，建議進行針對性的電容可靠度測試。</li>
+                </ul>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const HOURS_PER_YEAR = 8760;
+        let isInputHours = true;
+
+        const elT0 = document.getElementById('t0');
+        const elL0 = document.getElementById('l0');
+        const elTx = document.getElementById('tx');
+        const elResultHours = document.getElementById('resultHours');
+        const elResultYears = document.getElementById('resultYears');
+        const elWarningBanner = document.getElementById('warningBanner');
+        const elUnitToggle = document.getElementById('unitToggle');
+
+        function toggleUnit() {
+            isInputHours = !isInputHours;
+            const currentVal = parseFloat(elL0.value) || 0;
+            
+            if (isInputHours) {
+                elUnitToggle.innerText = "切換為 年";
+                elL0.value = (currentVal * HOURS_PER_YEAR).toFixed(0);
+            } else {
+                elUnitToggle.innerText = "切換為 小時";
+                elL0.value = (currentVal / HOURS_PER_YEAR).toFixed(2);
+            }
+            calculateLife();
+        }
+
+        function calculateLife() {
+            const t0 = parseFloat(elT0.value);
+            let l0_input = parseFloat(elL0.value);
+            const tx = parseFloat(elTx.value);
+
+            if (isNaN(t0) || isNaN(l0_input) || isNaN(tx)) {
+                elResultHours.innerHTML = "-- <span class='res-unit'>小時 (Hrs)</span>";
+                elResultYears.innerText = "-- 年 (Yrs)";
+                return;
+            }
+
+            // Normalize L0 to hours for calculation
+            const l0_hours = isInputHours ? l0_input : l0_input * HOURS_PER_YEAR;
+
+            // Calculate using 10-degree rule: Lx = L0 * 2^((T0 - Tx)/10)
+            const tempDiff = t0 - tx;
+            const calculatedHours = l0_hours * Math.pow(2, tempDiff / 10);
+            const calculatedYears = calculatedHours / HOURS_PER_YEAR;
+
+            // Show actual calculation results 
+            elResultHours.innerHTML = Math.round(calculatedHours).toLocaleString() + " <span class='res-unit'>小時 (Hrs)</span>";
+            elResultYears.innerHTML = calculatedYears.toFixed(2) + " 年 (Yrs)";
+
+            // Check if it exceeds 15 years for the warning banner
+            if (calculatedYears > 15) {
+                elWarningBanner.classList.add('show');
+            } else {
+                elWarningBanner.classList.remove('show');
+            }
+        }
+
+        // Event Listeners
+        elT0.addEventListener('input', calculateLife);
+        elL0.addEventListener('input', calculateLife);
+        elTx.addEventListener('input', calculateLife);
+
+        // Initial Calculation
+        calculateLife();
+    </script>
+</body>
+</html>
