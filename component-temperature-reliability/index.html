@@ -107,9 +107,9 @@
   .state-title{font-size:12.5px;font-weight:600;color:var(--muted)}
   .readout{font-family:var(--mono);font-variant-numeric:tabular-nums;
     font-weight:600;letter-spacing:-.02em;line-height:1.02;color:var(--sc);
-    font-size:clamp(38px,7vw,62px);margin:6px 0 4px}
+    font-size:clamp(38px,7vw,62px);margin:6px 0 4px; word-break: keep-all;}
   .readout .small{font-size:.45em;color:var(--muted);font-weight:500}
-  .readout-cap{font-size:13px;color:var(--muted);max-width:52ch}
+  .readout-cap{font-size:13px;color:var(--muted);max-width:100%; word-break: keep-all;}
 
   .note{margin-top:18px;padding:14px 16px;border-radius:10px;background:var(--sc-bg);
     border:1px solid color-mix(in srgb,var(--sc) 22%,transparent);font-size:13px}
@@ -412,8 +412,8 @@ function render(){
 
   const warnBlock=()=>{
     let items="";
-    if(overTest)items+=`<li><b>測試溫度超規：</b>量測 Tj_test (${i.tj_test.toFixed(1)}°C) ﹥ 規格 (${i.tj_spec.toFixed(1)}°C)</li>`;
-    if(overField)items+=`<li><b>工作溫度超規：</b>推估 Tj_field (${tj_field.toFixed(1)}°C) ﹥ 規格 (${i.tj_spec.toFixed(1)}°C)</li>`;
+    if(overTest)items+=`<li><b>測試溫度超規：</b>量測 Tj_test (${i.tj_test.toFixed(1)}°C) ＞ 規格 (${i.tj_spec.toFixed(1)}°C)</li>`;
+    if(overField)items+=`<li><b>工作溫度超規：</b>推估 Tj_field (${tj_field.toFixed(1)}°C) ＞ 規格 (${i.tj_spec.toFixed(1)}°C)</li>`;
     return `<div class="note"><b>⚠ 溫度超規 — 模型假設失效</b>
       <ul>${items}</ul>
       <div class="fine">超過物理極限時，失效機制由「隨機損壞」轉為「快速物理降解」，
