@@ -282,7 +282,8 @@
       </section>
 
       <div class="foot">
-        <span class="tag"><svg class="ic" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M2 12h20M12 2v20"/></svg>Arrhenius Ea 模型</span>
+        <span class="tag">Arrhenius 模型</span>
+        <span class="tag" id="tagEa">Ea = 0.7 eV</span>
         <span class="tag">指數分布 (常數失效率)</span>
         <span class="tag" id="tagCL">90% 信心水準</span>
       </div>
@@ -404,6 +405,7 @@ function render(){
   $("m_wrr").className="v"+(!met?" flag":"");
   $("m_fit").innerHTML=fit.toFixed(1)+' <small>FIT</small>';
   $("tagCL").textContent=(i.confidence*100).toFixed(0)+"% 信心水準";
+  $("tagEa").textContent="Ea = "+i.ea+" eV";
 
   // 四種情境
   let sc,pill,title,readout,cap,note="";
