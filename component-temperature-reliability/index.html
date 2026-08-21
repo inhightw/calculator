@@ -260,7 +260,7 @@
       <section class="panel advice" id="adviceCard" style="display:none">
         <div class="hd">
           <svg class="ic" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M21 7v6h-6"/></svg>
-          優化建議 — 使 5Y WRR ﹤ 5%
+          優化建議 — 使 5Y WRR ＜ 5%
         </div>
         <div class="bd">
           <div class="adv">
@@ -510,7 +510,7 @@ function exportReport(){
 [結論]
 狀態：${statusLine}
 ${extra}
-[優化建議 — 使 5Y WRR ﹤ 5%]
+[優化建議 — 使 5Y WRR ＜ 5%]
 方案 A (降額)：工作結面溫 Tj 應 ≤ ${(isFinite(tjTarget)&&tjTarget>-273)?tjTarget.toFixed(2)+" °C":"需大幅降溫"}
 方案 B (量能)：測試規模 (n×t) 需 ${mul>1?mul.toFixed(2)+" 倍":"目前已足夠"}
 方案 C (升溫)：測試溫度 Tj_vendor 應 ≥ ${(isFinite(tjTestTarget)&&tjTestTarget<300)?tjTestTarget.toFixed(2)+" °C":"需極高溫 (不建議)"}
